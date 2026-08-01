@@ -45,6 +45,7 @@ export function Fretboard({
   showOtherNotes,
 }: FretboardProps) {
   const tuning = STANDARD_TUNINGS[instrument]
+  const stringsFromHighToLow = tuning.toReversed()
   const intervalsByNote = new Map(
     scaleTones.map(({ note, interval }) => [note, interval]),
   )
@@ -77,8 +78,8 @@ export function Fretboard({
             </tr>
           </thead>
           <tbody>
-            {tuning.map((openString, stringIndex) => {
-              const stringThickness = 1 + (tuning.length - stringIndex - 1) * 0.7
+            {stringsFromHighToLow.map((openString, stringIndex) => {
+              const stringThickness = 1 + stringIndex * 0.7
               const rowStyle = {
                 '--string-thickness': `${stringThickness}px`,
               } as CSSProperties

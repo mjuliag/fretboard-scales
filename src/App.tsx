@@ -21,6 +21,13 @@ const SCALE_LABELS = {
   majorPentatonic: 'Major Pentatonic',
   minorPentatonic: 'Minor Pentatonic',
   blues: 'Blues',
+  ionian: 'Ionian',
+  dorian: 'Dorian',
+  phrygian: 'Phrygian',
+  lydian: 'Lydian',
+  mixolydian: 'Mixolydian',
+  aeolian: 'Aeolian',
+  locrian: 'Locrian',
 } as const satisfies Record<ScaleName, string>
 
 const SCALE_OPTIONS = Object.keys(SCALE_INTERVALS) as ScaleName[]
