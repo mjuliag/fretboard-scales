@@ -53,6 +53,115 @@ h1 {
   background: #2563eb;
 }
 
+.fretboard-section {
+  margin-top: 2.5rem;
+}
+
+.fretboard-section h2 {
+  margin: 0 0 1rem;
+  color: #e2e8f0;
+  font-size: 1.1rem;
+  text-transform: capitalize;
+}
+
+.fretboard-scroll {
+  overflow-x: auto;
+  border: 1px solid #303949;
+  border-radius: 0.65rem;
+  background: #151c28;
+  scrollbar-color: #475569 #151c28;
+}
+
+.fretboard-scroll:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 3px;
+}
+
+.fretboard {
+  width: max-content;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+.fretboard th,
+.fretboard td {
+  position: relative;
+  width: 4rem;
+  min-width: 4rem;
+  height: 3.5rem;
+  padding: 0;
+  text-align: center;
+}
+
+.fretboard th {
+  height: 3.25rem;
+  border-bottom: 1px solid #303949;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 600;
+  vertical-align: top;
+}
+
+.fretboard td {
+  border-right: 1px solid #475569;
+}
+
+.fretboard tbody tr:not(:last-child) td {
+  border-bottom: 1px solid #273142;
+}
+
+.fretboard tbody tr td::after {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  z-index: 0;
+  height: 1px;
+  background: #718096;
+  content: '';
+}
+
+.fret-number {
+  display: block;
+  padding-top: 0.45rem;
+}
+
+.fret-marker {
+  display: flex;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-top: 0.45rem;
+}
+
+.fret-marker-dot {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  background: #64748b;
+}
+
+.fretboard .open-fret {
+  border-right: 0.3rem solid #d1d5db;
+  background: #202938;
+}
+
+.note {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.35rem;
+  border: 1px solid #46546a;
+  border-radius: 50%;
+  color: #e2e8f0;
+  background: #1b2533;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
 @media (max-width: 36rem) {
   .app-shell {
     padding-top: 2rem;

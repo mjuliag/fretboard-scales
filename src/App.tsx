@@ -1,10 +1,15 @@
 import { useState } from 'react'
+import { Fretboard } from './components/Fretboard'
+import type { Instrument } from './music'
 import './App.css'
 
-type Instrument = 'Guitar' | 'Bass'
+const INSTRUMENT_OPTIONS = [
+  { value: 'guitar', label: 'Guitar' },
+  { value: 'bass', label: 'Bass' },
+] as const satisfies readonly { value: Instrument; label: string }[]
 
 function App() {
-  const [instrument, setInstrument] = useState<Instrument>('Bass')
+  const [instrument, setInstrument] = useState<Instrument>('bass')
 
   return (
     <main className="app-shell">
@@ -12,19 +17,21 @@ function App() {
         <h1>Fretboard Scales</h1>
 
         <div className="instrument-selector" aria-label="Select instrument">
-          {(['Guitar', 'Bass'] as const).map((option) => (
+          {INSTRUMENT_OPTIONS.map((option) => (
             <button
-              key={option}
+              key={option.value}
               type="button"
-              className={instrument === option ? 'selected' : ''}
-              aria-pressed={instrument === option}
-              onClick={() => setInstrument(option)}
+              className={instrument === option.value ? 'selected' : ''}
+              aria-pressed={instrument === option.value}
+              onClick={() => setInstrument(option.value)}
             >
-              {option}
+              {option.label}
             </button>
           ))}
         </div>
       </header>
+
+      <Fretboard instrument={instrument} />
     </main>
   )
 }
