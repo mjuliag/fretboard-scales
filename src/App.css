@@ -70,6 +70,80 @@ h1 {
   text-transform: uppercase;
 }
 
+.display-mode-control {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.display-mode-control legend {
+  margin-bottom: 0.35rem;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.display-mode-control div {
+  display: flex;
+}
+
+.display-mode-control button {
+  padding: 0.62rem 0.7rem;
+  border: 1px solid #3b4659;
+  color: #94a3b8;
+  background: #1b2230;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  cursor: pointer;
+}
+
+.display-mode-control button:first-child {
+  border-radius: 0.5rem 0 0 0.5rem;
+}
+
+.display-mode-control button:last-child {
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+
+.display-mode-control button:not(:first-child) {
+  margin-left: -1px;
+}
+
+.display-mode-control button.selected {
+  position: relative;
+  border-color: #22d3ee;
+  color: #ecfeff;
+  background: #164e63;
+}
+
+.display-mode-control button:focus-visible {
+  z-index: 1;
+  outline: 2px solid #22d3ee;
+  outline-offset: 2px;
+}
+
+.scale-controls .other-notes-control {
+  display: flex;
+  align-items: center;
+  align-self: end;
+  grid-auto-flow: column;
+  gap: 0.5rem;
+  min-height: 2.45rem;
+  cursor: pointer;
+}
+
+.other-notes-control input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: #06b6d4;
+}
+
 .scale-controls select {
   min-width: 6rem;
   padding: 0.6rem 2rem 0.6rem 0.7rem;
@@ -215,10 +289,11 @@ h1 {
   position: relative;
   z-index: 1;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   min-width: 2rem;
-  height: 2rem;
+  height: 2.25rem;
   padding: 0 0.35rem;
   border: 1px solid #46546a;
   border-radius: 50%;
@@ -228,29 +303,42 @@ h1 {
   font-weight: 700;
 }
 
+.interval-label {
+  font-size: 0.62rem;
+  font-weight: 600;
+  line-height: 0.8rem;
+  opacity: 0.8;
+}
+
+.note.hidden-note {
+  visibility: hidden;
+}
+
 .note.root-note,
 .legend-swatch.root-note {
-  border-color: #fbbf24;
-  color: #111827;
-  background: #fbbf24;
+  border-color: #f0abfc;
+  color: #fdf4ff;
+  background: #c026d3;
+  box-shadow: 0 0 0.75rem rgb(217 70 239 / 35%);
 }
 
 .note.scale-note,
 .legend-swatch.scale-note {
-  border-color: #60a5fa;
-  color: #eff6ff;
-  background: #2563eb;
+  border-color: #67e8f9;
+  color: #ecfeff;
+  background: #0891b2;
+  box-shadow: 0 0 0.65rem rgb(34 211 238 / 25%);
 }
 
 .note.other-note {
-  border-color: #344154;
-  color: #718096;
-  background: #171f2b;
+  border-color: #303a49;
+  color: #64748b;
+  background: #171c25;
 }
 
 .legend-swatch.other-note {
-  border-color: #344154;
-  background: #171f2b;
+  border-color: #303a49;
+  background: #171c25;
 }
 
 @media (max-width: 36rem) {

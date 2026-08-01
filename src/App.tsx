@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Fretboard } from './components/Fretboard'
+import { Fretboard, type DisplayMode } from './components/Fretboard'
 import {
-  getScale,
+  getScaleTones,
   PITCH_CLASSES,
   SCALE_INTERVALS,
   type Instrument,
@@ -24,12 +24,15 @@ const SCALE_LABELS = {
 } as const satisfies Record<ScaleName, string>
 
 const SCALE_OPTIONS = Object.keys(SCALE_INTERVALS) as ScaleName[]
+const DISPLAY_MODES = ['notes', 'intervals', 'both'] as const
 
 function App() {
   const [instrument, setInstrument] = useState<Instrument>('bass')
   const [root, setRoot] = useState<PitchClass>('A')
   const [scaleName, setScaleName] = useState<ScaleName>('minorPentatonic')
-  const selectedScale = getScale(root, scaleName)
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('both')
+  const [showOtherNotes, setShowOtherNotes] = useState(true)
+  const scaleTones = getScaleTones(root, scaleName)
 
   return (
     <main className="app-shell">
@@ -79,12 +82,40 @@ function App() {
             ))}
           </select>
         </label>
+
+        <fieldset className="display-mode-control">
+          <legend>Display</legend>
+          <div>
+            {DISPLAY_MODES.map((mode) => (
+              <button
+                type="button"
+                className={displayMode === mode ? 'selected' : ''}
+                aria-pressed={displayMode === mode}
+                key={mode}
+                onClick={() => setDisplayMode(mode)}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+
+        <label className="other-notes-control">
+          <input
+            type="checkbox"
+            checked={showOtherNotes}
+            onChange={(event) => setShowOtherNotes(event.target.checked)}
+          />
+          <span>Show other notes</span>
+        </label>
       </section>
 
       <Fretboard
+        displayMode={displayMode}
         instrument={instrument}
         root={root}
-        scaleNotes={selectedScale}
+        scaleTones={scaleTones}
+        showOtherNotes={showOtherNotes}
       />
     </main>
   )
