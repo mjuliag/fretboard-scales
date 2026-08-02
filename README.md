@@ -1,32 +1,55 @@
-# React + TypeScript + Vite
+# Fretboard Scales
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+An interactive guitar and bass fretboard for exploring scales, Greek modes, intervals, and playable fret positions.
 
-Currently, two official plugins are available:
+Live app: [fretboard-scales-2c0.pages.dev](https://fretboard-scales-2c0.pages.dev)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Why it exists
 
-## React Compiler
+This project is a personal learning tool focused on bass, readability, interval awareness, and consistent sharp-only note naming.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Features
 
-## Expanding the Oxlint configuration
+- Bass and guitar fretboards spanning frets 0–24
+- Player-perspective string orientation
+- Root note and scale selection
+- Notes, Intervals, and Both display modes
+- Seven Greek modes with parent major-scale context
+- Position view with configurable fret ranges
+- Distinct root and scale-note highlighting
+- Sharp-only note names
+- Installable Progressive Web App (PWA)
+- Offline support
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+The fretboard works best in landscape orientation on small mobile screens.
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+## Tech stack
+
+- React
+- TypeScript
+- Vite
+- vite-plugin-pwa
+- Node.js built-in test runner
+
+## Local development
+
+Install dependencies and start the development server:
+
+```sh
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Verification
+
+Run the test, lint, and production build checks:
+
+```sh
+npm test
+npm run lint
+npm run build
+```
+
+## License
+
+Released under the [MIT License](LICENSE).
