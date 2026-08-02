@@ -70,14 +70,16 @@ h1 {
   text-transform: uppercase;
 }
 
-.display-mode-control {
+.display-mode-control,
+.view-control {
   min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
 }
 
-.display-mode-control legend {
+.display-mode-control legend,
+.view-control legend {
   margin-bottom: 0.35rem;
   color: #94a3b8;
   font-size: 0.75rem;
@@ -86,11 +88,13 @@ h1 {
   text-transform: uppercase;
 }
 
-.display-mode-control div {
+.display-mode-control div,
+.view-control div {
   display: flex;
 }
 
-.display-mode-control button {
+.display-mode-control button,
+.view-control button {
   padding: 0.62rem 0.7rem;
   border: 1px solid #3b4659;
   color: #94a3b8;
@@ -102,26 +106,31 @@ h1 {
   cursor: pointer;
 }
 
-.display-mode-control button:first-child {
+.display-mode-control button:first-child,
+.view-control button:first-child {
   border-radius: 0.5rem 0 0 0.5rem;
 }
 
-.display-mode-control button:last-child {
+.display-mode-control button:last-child,
+.view-control button:last-child {
   border-radius: 0 0.5rem 0.5rem 0;
 }
 
-.display-mode-control button:not(:first-child) {
+.display-mode-control button:not(:first-child),
+.view-control button:not(:first-child) {
   margin-left: -1px;
 }
 
-.display-mode-control button.selected {
+.display-mode-control button.selected,
+.view-control button.selected {
   position: relative;
   border-color: #22d3ee;
   color: #ecfeff;
   background: #164e63;
 }
 
-.display-mode-control button:focus-visible {
+.display-mode-control button:focus-visible,
+.view-control button:focus-visible {
   z-index: 1;
   outline: 2px solid #22d3ee;
   outline-offset: 2px;
@@ -142,6 +151,37 @@ h1 {
   height: 1rem;
   margin: 0;
   accent-color: #06b6d4;
+}
+
+.position-controls {
+  display: flex;
+  align-items: end;
+  gap: 0.65rem;
+}
+
+.position-controls input {
+  width: 4.5rem;
+  padding: 0.58rem 0.4rem 0.58rem 0.65rem;
+  border: 1px solid #3b4659;
+  border-radius: 0.5rem;
+  color: #e2e8f0;
+  background: #1b2230;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.position-controls input:focus-visible {
+  outline: 2px solid #22d3ee;
+  outline-offset: 2px;
+}
+
+.position-controls output {
+  min-width: 5.6rem;
+  padding-bottom: 0.62rem;
+  color: #a5f3fc;
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 .scale-controls select {

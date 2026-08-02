@@ -7,7 +7,6 @@ import {
   type ScaleTone,
 } from '../music'
 
-const FRETS = Array.from({ length: 25 }, (_, fret) => fret)
 const SINGLE_MARKER_FRETS = new Set([3, 5, 7, 9, 15, 17, 19, 21])
 const DOUBLE_MARKER_FRETS = new Set([12, 24])
 
@@ -15,6 +14,10 @@ export type DisplayMode = 'notes' | 'intervals' | 'both'
 
 type FretboardProps = {
   displayMode: DisplayMode
+  fretRange: {
+    start: number
+    end: number
+  }
   instrument: Instrument
   root: PitchClass
   scaleTones: readonly ScaleTone[]
@@ -39,11 +42,16 @@ function FretMarker({ fret }: { fret: number }) {
 
 export function Fretboard({
   displayMode,
+  fretRange,
   instrument,
   root,
   scaleTones,
   showOtherNotes,
 }: FretboardProps) {
+  const frets = Array.from(
+    { length: fretRange.end - fretRange.start + 1 },
+    (_, index) => fretRange.start + index,
+  )
   const tuning = STANDARD_TUNINGS[instrument]
   const stringsFromHighToLow = tuning.toReversed()
   const intervalsByNote = new Map(
@@ -65,7 +73,7 @@ export function Fretboard({
         <table className="fretboard">
           <thead>
             <tr>
-              {FRETS.map((fret) => (
+              {frets.map((fret) => (
                 <th
                   className={fret === 0 ? 'open-fret' : undefined}
                   key={fret}
@@ -86,7 +94,7 @@ export function Fretboard({
 
               return (
                 <tr key={`${openString}-${stringIndex}`} style={rowStyle}>
-                  {FRETS.map((fret) => {
+                  {frets.map((fret) => {
                     const note = getNoteAtFret(openString, fret)
                     const interval = intervalsByNote.get(note)
                     const noteType = note === root

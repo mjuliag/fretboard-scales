@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, type FocusEvent } from 'react'
 import { Fretboard, type DisplayMode } from './components/Fretboard'
+import { isValidFretDraft, parseFretRangeDraft } from './fretRange'
 import {
   getModeRelationship,
   getScaleTones,
@@ -34,6 +35,9 @@ const SCALE_LABELS = {
 
 const SCALE_OPTIONS = Object.keys(SCALE_INTERVALS) as ScaleName[]
 const DISPLAY_MODES = ['notes', 'intervals', 'both'] as const
+const FULL_FRET_RANGE = { start: 0, end: 24 } as const
+
+type FretboardView = 'full' | 'position'
 
 function ordinal(degree: number): string {
   return `${degree}${degree === 1 ? 'st' : degree === 2 ? 'nd' : degree === 3 ? 'rd' : 'th'}`
@@ -45,8 +49,36 @@ function App() {
   const [scaleName, setScaleName] = useState<ScaleName>('minorPentatonic')
   const [displayMode, setDisplayMode] = useState<DisplayMode>('both')
   const [showOtherNotes, setShowOtherNotes] = useState(true)
+  const [fretboardView, setFretboardView] = useState<FretboardView>('full')
+  const [positionStart, setPositionStart] = useState(5)
+  const [positionEnd, setPositionEnd] = useState(9)
+  const [positionStartDraft, setPositionStartDraft] = useState('5')
+  const [positionEndDraft, setPositionEndDraft] = useState('9')
   const scaleTones = getScaleTones(root, scaleName)
   const modeRelationship = getModeRelationship(root, scaleName)
+  const fretRange = fretboardView === 'full'
+    ? FULL_FRET_RANGE
+    : { start: positionStart, end: positionEnd }
+
+  function commitPositionRange() {
+    const nextRange = parseFretRangeDraft(
+      positionStartDraft,
+      positionEndDraft,
+    )
+
+    if (!nextRange) return
+
+    setPositionStart(nextRange.start)
+    setPositionEnd(nextRange.end)
+    setPositionStartDraft(String(nextRange.start))
+    setPositionEndDraft(String(nextRange.end))
+  }
+
+  function handlePositionControlsBlur(event: FocusEvent<HTMLDivElement>) {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      commitPositionRange()
+    }
+  }
 
   return (
     <main className="app-shell">
@@ -114,6 +146,68 @@ function App() {
           </div>
         </fieldset>
 
+        <fieldset className="view-control">
+          <legend>View</legend>
+          <div>
+            <button
+              type="button"
+              className={fretboardView === 'full' ? 'selected' : ''}
+              aria-pressed={fretboardView === 'full'}
+              onClick={() => setFretboardView('full')}
+            >
+              Full fretboard
+            </button>
+            <button
+              type="button"
+              className={fretboardView === 'position' ? 'selected' : ''}
+              aria-pressed={fretboardView === 'position'}
+              onClick={() => setFretboardView('position')}
+            >
+              Position
+            </button>
+          </div>
+        </fieldset>
+
+        {fretboardView === 'position' && (
+          <div className="position-controls" onBlur={handlePositionControlsBlur}>
+            <label>
+              <span>Start fret</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={positionStartDraft}
+                onChange={(event) => {
+                  if (isValidFretDraft(event.target.value)) {
+                    setPositionStartDraft(event.target.value)
+                  }
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') commitPositionRange()
+                }}
+              />
+            </label>
+            <label>
+              <span>End fret</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={positionEndDraft}
+                onChange={(event) => {
+                  if (isValidFretDraft(event.target.value)) {
+                    setPositionEndDraft(event.target.value)
+                  }
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') commitPositionRange()
+                }}
+              />
+            </label>
+            <output aria-live="polite">Frets {positionStart}–{positionEnd}</output>
+          </div>
+        )}
+
         <label className="other-notes-control">
           <input
             type="checkbox"
@@ -147,6 +241,7 @@ function App() {
 
       <Fretboard
         displayMode={displayMode}
+        fretRange={fretRange}
         instrument={instrument}
         root={root}
         scaleTones={scaleTones}
