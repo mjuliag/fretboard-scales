@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { getNoteAtFret, getScale, getScaleTones } from './index.ts'
+import {
+  getModeRelationship,
+  getNoteAtFret,
+  getScale,
+  getScaleTones,
+} from './index.ts'
 
 describe('getNoteAtFret', () => {
   it('returns the open-string note at fret 0', () => {
@@ -111,5 +116,51 @@ describe('getScaleTones', () => {
       { note: 'G', interval: 'b6' },
       { note: 'A', interval: 'b7' },
     ])
+  })
+})
+
+describe('getModeRelationship', () => {
+  it('finds each mode degree and parent major scale', () => {
+    assert.deepEqual(getModeRelationship('G', 'mixolydian'), {
+      parentRoot: 'C',
+      degree: 5,
+    })
+    assert.deepEqual(getModeRelationship('A', 'dorian'), {
+      parentRoot: 'G',
+      degree: 2,
+    })
+    assert.deepEqual(getModeRelationship('E', 'phrygian'), {
+      parentRoot: 'C',
+      degree: 3,
+    })
+    assert.deepEqual(getModeRelationship('F', 'lydian'), {
+      parentRoot: 'C',
+      degree: 4,
+    })
+    assert.deepEqual(getModeRelationship('A', 'aeolian'), {
+      parentRoot: 'C',
+      degree: 6,
+    })
+    assert.deepEqual(getModeRelationship('B', 'locrian'), {
+      parentRoot: 'C',
+      degree: 7,
+    })
+    assert.deepEqual(getModeRelationship('C', 'ionian'), {
+      parentRoot: 'C',
+      degree: 1,
+    })
+  })
+
+  it('uses sharp pitch-class names for enharmonic parent roots', () => {
+    assert.deepEqual(getModeRelationship('G#', 'mixolydian'), {
+      parentRoot: 'C#',
+      degree: 5,
+    })
+  })
+
+  it('does not describe non-modal scales as modes', () => {
+    assert.equal(getModeRelationship('C', 'major'), null)
+    assert.equal(getModeRelationship('A', 'naturalMinor'), null)
+    assert.equal(getModeRelationship('A', 'minorPentatonic'), null)
   })
 })

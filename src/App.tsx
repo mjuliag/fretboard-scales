@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Fretboard, type DisplayMode } from './components/Fretboard'
 import {
+  getModeRelationship,
   getScaleTones,
   PITCH_CLASSES,
+  SCALE_INTERVAL_LABELS,
   SCALE_INTERVALS,
   type Instrument,
   type PitchClass,
@@ -33,6 +35,10 @@ const SCALE_LABELS = {
 const SCALE_OPTIONS = Object.keys(SCALE_INTERVALS) as ScaleName[]
 const DISPLAY_MODES = ['notes', 'intervals', 'both'] as const
 
+function ordinal(degree: number): string {
+  return `${degree}${degree === 1 ? 'st' : degree === 2 ? 'nd' : degree === 3 ? 'rd' : 'th'}`
+}
+
 function App() {
   const [instrument, setInstrument] = useState<Instrument>('bass')
   const [root, setRoot] = useState<PitchClass>('A')
@@ -40,6 +46,7 @@ function App() {
   const [displayMode, setDisplayMode] = useState<DisplayMode>('both')
   const [showOtherNotes, setShowOtherNotes] = useState(true)
   const scaleTones = getScaleTones(root, scaleName)
+  const modeRelationship = getModeRelationship(root, scaleName)
 
   return (
     <main className="app-shell">
@@ -116,6 +123,27 @@ function App() {
           <span>Show other notes</span>
         </label>
       </section>
+
+      {modeRelationship && (
+        <aside className="mode-info" aria-label="Mode relationship">
+          <div className="mode-info-heading">
+            <strong>
+              {root} {SCALE_LABELS[scaleName]}
+            </strong>
+            <span>
+              {ordinal(modeRelationship.degree)} mode of{' '}
+              {modeRelationship.parentRoot} Major
+            </span>
+          </div>
+          <p className="mode-formula" aria-label="Interval formula">
+            {SCALE_INTERVAL_LABELS[scaleName].join(' · ')}
+          </p>
+          <p>
+            Uses the same notes as {modeRelationship.parentRoot} Major, with{' '}
+            {root} as the tonal center.
+          </p>
+        </aside>
+      )}
 
       <Fretboard
         displayMode={displayMode}

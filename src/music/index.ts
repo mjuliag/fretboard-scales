@@ -32,6 +32,23 @@ export const SCALE_INTERVALS = {
 
 export type ScaleName = keyof typeof SCALE_INTERVALS
 
+export const MODE_DEGREES = {
+  ionian: 1,
+  dorian: 2,
+  phrygian: 3,
+  lydian: 4,
+  mixolydian: 5,
+  aeolian: 6,
+  locrian: 7,
+} as const
+
+export type ModeName = keyof typeof MODE_DEGREES
+
+export type ModeRelationship = {
+  degree: (typeof MODE_DEGREES)[ModeName]
+  parentRoot: PitchClass
+}
+
 export const SCALE_INTERVAL_LABELS = {
   major: ['1', '2', '3', '4', '5', '6', '7'],
   naturalMinor: ['1', '2', 'b3', '4', '5', 'b6', 'b7'],
@@ -64,9 +81,32 @@ export type Instrument = keyof typeof STANDARD_TUNINGS
 
 function transpose(note: PitchClass, semitones: number): PitchClass {
   const noteIndex = PITCH_CLASSES.indexOf(note)
-  const transposedIndex = (noteIndex + semitones) % PITCH_CLASSES.length
+  const transposedIndex =
+    ((noteIndex + semitones) % PITCH_CLASSES.length + PITCH_CLASSES.length) %
+    PITCH_CLASSES.length
 
   return PITCH_CLASSES[transposedIndex]
+}
+
+export function isMode(scale: ScaleName): scale is ModeName {
+  return scale in MODE_DEGREES
+}
+
+export function getModeRelationship(
+  root: PitchClass,
+  scale: ScaleName,
+): ModeRelationship | null {
+  if (!isMode(scale)) {
+    return null
+  }
+
+  const degree = MODE_DEGREES[scale]
+  const majorScaleOffset = SCALE_INTERVALS.major[degree - 1]
+
+  return {
+    degree,
+    parentRoot: transpose(root, -majorScaleOffset),
+  }
 }
 
 export function getNoteAtFret(
