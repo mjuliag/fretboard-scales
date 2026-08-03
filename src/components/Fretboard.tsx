@@ -3,6 +3,7 @@ import {
   getNoteAtFret,
   STANDARD_TUNINGS,
   type Instrument,
+  type IntervalLabel,
   type PitchClass,
   type ScaleTone,
 } from '../music'
@@ -14,6 +15,8 @@ export type DisplayMode = 'notes' | 'intervals' | 'both'
 
 type FretboardProps = {
   displayMode: DisplayMode
+  focusedInterval: 'all' | IntervalLabel
+  focusedIntervalExists: boolean
   fretRange: {
     start: number
     end: number
@@ -42,6 +45,8 @@ function FretMarker({ fret }: { fret: number }) {
 
 export function Fretboard({
   displayMode,
+  focusedInterval,
+  focusedIntervalExists,
   fretRange,
   instrument,
   root,
@@ -105,6 +110,16 @@ export function Fretboard({
                     const showNoteName = !interval || displayMode !== 'intervals'
                     const showInterval = interval && displayMode !== 'notes'
                     const isHidden = !interval && !showOtherNotes
+                    const isFocused = focusedIntervalExists
+                      && interval === focusedInterval
+                    const isSubdued = focusedIntervalExists
+                      && Boolean(interval)
+                      && !isFocused
+                    const focusClass = isFocused
+                      ? ' focused-note'
+                      : isSubdued
+                        ? ' subdued-note'
+                        : ''
 
                     return (
                       <td
@@ -112,7 +127,7 @@ export function Fretboard({
                         key={fret}
                       >
                         <span
-                          className={`note ${noteType}${isHidden ? ' hidden-note' : ''}`}
+                          className={`note ${noteType}${focusClass}${isHidden ? ' hidden-note' : ''}`}
                         >
                           {showNoteName && <span className="note-name">{note}</span>}
                           {showInterval && (

@@ -146,6 +146,31 @@ h1 {
   cursor: pointer;
 }
 
+.focus-control {
+  display: flex;
+  align-items: end;
+  gap: 0.55rem;
+}
+
+.focus-control output {
+  padding-bottom: 0.62rem;
+  color: #f0abfc;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.focus-control .missing-focus-message {
+  display: grid;
+  gap: 0.15rem;
+  color: #cbd5e1;
+  white-space: normal;
+}
+
+.missing-focus-message span:first-child {
+  color: #f0abfc;
+}
+
 .other-notes-control input {
   width: 1rem;
   height: 1rem;
@@ -408,6 +433,22 @@ h1 {
   color: #ecfeff;
   background: #0891b2;
   box-shadow: 0 0 0.65rem rgb(34 211 238 / 25%);
+}
+
+.note.subdued-note {
+  opacity: 0.35;
+  filter: saturate(0.45);
+  box-shadow: none;
+}
+
+.note.focused-note {
+  border-color: #f5d0fe;
+  color: #ffffff;
+  background: #d946ef;
+  box-shadow:
+    0 0 0 2px #22d3ee,
+    0 0 1rem rgb(217 70 239 / 70%);
+  transform: scale(1.08);
 }
 
 .note.other-note {

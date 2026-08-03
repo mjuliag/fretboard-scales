@@ -8,6 +8,7 @@ import {
   SCALE_INTERVAL_LABELS,
   SCALE_INTERVALS,
   type Instrument,
+  type IntervalLabel,
   type PitchClass,
   type ScaleName,
 } from './music'
@@ -38,6 +39,7 @@ const DISPLAY_MODES = ['notes', 'intervals', 'both'] as const
 const FULL_FRET_RANGE = { start: 0, end: 24 } as const
 
 type FretboardView = 'full' | 'position'
+type IntervalFocus = 'all' | IntervalLabel
 
 function ordinal(degree: number): string {
   return `${degree}${degree === 1 ? 'st' : degree === 2 ? 'nd' : degree === 3 ? 'rd' : 'th'}`
@@ -49,12 +51,16 @@ function App() {
   const [scaleName, setScaleName] = useState<ScaleName>('minorPentatonic')
   const [displayMode, setDisplayMode] = useState<DisplayMode>('both')
   const [showOtherNotes, setShowOtherNotes] = useState(true)
+  const [focusedInterval, setFocusedInterval] = useState<IntervalFocus>('all')
   const [fretboardView, setFretboardView] = useState<FretboardView>('full')
   const [positionStart, setPositionStart] = useState(5)
   const [positionEnd, setPositionEnd] = useState(9)
   const [positionStartDraft, setPositionStartDraft] = useState('5')
   const [positionEndDraft, setPositionEndDraft] = useState('9')
   const scaleTones = getScaleTones(root, scaleName)
+  const focusOptions = scaleTones.map(({ interval }) => interval)
+  const focusedIntervalExists = focusedInterval !== 'all'
+    && focusOptions.some((interval) => interval === focusedInterval)
   const modeRelationship = getModeRelationship(root, scaleName)
   const fretRange = fretboardView === 'full'
     ? FULL_FRET_RANGE
@@ -128,6 +134,39 @@ function App() {
             ))}
           </select>
         </label>
+
+        <div className="focus-control">
+          <label>
+            <span>Focus interval</span>
+            <select
+              value={focusedInterval}
+              onChange={(event) => {
+                setFocusedInterval(event.target.value as IntervalFocus)
+              }}
+            >
+              <option value="all">All</option>
+              {focusedInterval !== 'all' && !focusedIntervalExists && (
+                <option value={focusedInterval}>{focusedInterval}</option>
+              )}
+              {focusOptions.map((interval) => (
+                <option key={interval} value={interval}>
+                  {interval}
+                </option>
+              ))}
+            </select>
+          </label>
+          {focusedIntervalExists && (
+            <output aria-live="polite">Focusing {focusedInterval}</output>
+          )}
+          {focusedInterval !== 'all' && !focusedIntervalExists && (
+            <output className="missing-focus-message" aria-live="polite">
+              <span>
+                {focusedInterval} is not part of {root} {SCALE_LABELS[scaleName]}
+              </span>
+              <span>Scale intervals: {focusOptions.join(' · ')}</span>
+            </output>
+          )}
+        </div>
 
         <fieldset className="display-mode-control">
           <legend>Display</legend>
@@ -241,6 +280,8 @@ function App() {
 
       <Fretboard
         displayMode={displayMode}
+        focusedInterval={focusedInterval}
+        focusedIntervalExists={focusedIntervalExists}
         fretRange={fretRange}
         instrument={instrument}
         root={root}
