@@ -72,6 +72,28 @@ export type ScaleTone = {
   interval: IntervalLabel
 }
 
+export type ChordToneMode = 'off' | 'triad' | 'seventh'
+
+export type ChordToneResult =
+  | {
+      supported: true
+      tones: ScaleTone[]
+      missingDegrees: []
+      ambiguousDegrees: []
+    }
+  | {
+      supported: false
+      tones: []
+      missingDegrees: number[]
+      ambiguousDegrees: number[]
+    }
+
+const SCALE_CHORD_TONE_PREFERENCES: Partial<
+  Record<ScaleName, Partial<Record<number, IntervalLabel>>>
+> = {
+  blues: { 5: '5' },
+}
+
 export const STANDARD_TUNINGS = {
   guitar: ['E', 'A', 'D', 'G', 'B', 'E'],
   bass: ['E', 'A', 'D', 'G'],
@@ -139,4 +161,57 @@ export function getScaleTones(
   const labels = SCALE_INTERVAL_LABELS[scale]
 
   return notes.map((note, index) => ({ note, interval: labels[index] }))
+}
+
+function getIntervalDegree(interval: IntervalLabel): number {
+  return Number(interval.match(/\d+/)?.[0])
+}
+
+export function getChordTones(
+  scaleTones: readonly ScaleTone[],
+  mode: Exclude<ChordToneMode, 'off'>,
+  scale?: ScaleName,
+): ChordToneResult {
+  const requiredDegrees = mode === 'triad' ? [1, 3, 5] : [1, 3, 5, 7]
+  const matches = requiredDegrees.map((degree) => ({
+    degree,
+    tones: (() => {
+      const degreeTones = scaleTones.filter(
+        ({ interval }) => getIntervalDegree(interval) === degree,
+      )
+      const preferredInterval = scale
+        ? SCALE_CHORD_TONE_PREFERENCES[scale]?.[degree]
+        : undefined
+
+      if (degreeTones.length > 1 && preferredInterval) {
+        return degreeTones.filter(
+          ({ interval }) => interval === preferredInterval,
+        )
+      }
+
+      return degreeTones
+    })(),
+  }))
+  const missingDegrees = matches
+    .filter(({ tones }) => tones.length === 0)
+    .map(({ degree }) => degree)
+  const ambiguousDegrees = matches
+    .filter(({ tones }) => tones.length > 1)
+    .map(({ degree }) => degree)
+
+  if (missingDegrees.length > 0 || ambiguousDegrees.length > 0) {
+    return {
+      supported: false,
+      tones: [],
+      missingDegrees,
+      ambiguousDegrees,
+    }
+  }
+
+  return {
+    supported: true,
+    tones: matches.map(({ tones }) => tones[0]),
+    missingDegrees: [],
+    ambiguousDegrees: [],
+  }
 }

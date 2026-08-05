@@ -3,11 +3,13 @@ import { Fretboard, type DisplayMode } from './components/Fretboard'
 import { isValidFretDraft, parseFretRangeDraft } from './fretRange'
 import {
   getModeRelationship,
+  getChordTones,
   getScaleTones,
   PITCH_CLASSES,
   SCALE_INTERVAL_LABELS,
   SCALE_INTERVALS,
   type Instrument,
+  type ChordToneMode,
   type IntervalLabel,
   type PitchClass,
   type ScaleName,
@@ -15,9 +17,13 @@ import {
 import './App.css'
 
 const INSTRUMENT_OPTIONS = [
-  { value: 'guitar', label: 'Guitar' },
-  { value: 'bass', label: 'Bass' },
-] as const satisfies readonly { value: Instrument; label: string }[]
+  { value: 'guitar', label: 'Guitar', stringCount: 6 },
+  { value: 'bass', label: 'Bass', stringCount: 4 },
+] as const satisfies readonly {
+  value: Instrument
+  label: string
+  stringCount: number
+}[]
 
 const SCALE_LABELS = {
   major: 'Major',
@@ -36,6 +42,7 @@ const SCALE_LABELS = {
 
 const SCALE_OPTIONS = Object.keys(SCALE_INTERVALS) as ScaleName[]
 const DISPLAY_MODES = ['notes', 'intervals', 'both'] as const
+const CHORD_TONE_MODES = ['off', 'triad', 'seventh'] as const
 const FULL_FRET_RANGE = { start: 0, end: 24 } as const
 
 type FretboardView = 'full' | 'position'
@@ -52,12 +59,25 @@ function App() {
   const [displayMode, setDisplayMode] = useState<DisplayMode>('both')
   const [showOtherNotes, setShowOtherNotes] = useState(true)
   const [focusedInterval, setFocusedInterval] = useState<IntervalFocus>('all')
+  const [chordToneMode, setChordToneMode] = useState<ChordToneMode>('off')
+  const [includeBlueNote, setIncludeBlueNote] = useState(false)
   const [fretboardView, setFretboardView] = useState<FretboardView>('full')
   const [positionStart, setPositionStart] = useState(5)
   const [positionEnd, setPositionEnd] = useState(9)
   const [positionStartDraft, setPositionStartDraft] = useState('5')
   const [positionEndDraft, setPositionEndDraft] = useState('9')
   const scaleTones = getScaleTones(root, scaleName)
+  const chordToneResult = chordToneMode === 'off'
+    ? null
+    : getChordTones(scaleTones, chordToneMode, scaleName)
+  const chordToneIntervals = chordToneResult?.supported
+    ? chordToneResult.tones.map(({ interval }) => interval)
+    : null
+  const blueNote = scaleName === 'blues'
+    ? scaleTones.find(({ interval }) => interval === 'b5')
+    : undefined
+  const showBlueNoteOption = scaleName === 'blues'
+    && chordToneMode !== 'off'
   const focusOptions = scaleTones.map(({ interval }) => interval)
   const focusedIntervalExists = focusedInterval !== 'all'
     && focusOptions.some((interval) => interval === focusedInterval)
@@ -100,13 +120,31 @@ function App() {
               aria-pressed={instrument === option.value}
               onClick={() => setInstrument(option.value)}
             >
-              {option.label}
+              <span
+                className="instrument-string-icon"
+                data-string-count={option.stringCount}
+                aria-hidden="true"
+              >
+                {Array.from({ length: option.stringCount }, (_, index) => (
+                  <i key={index} />
+                ))}
+                <span className="instrument-fret instrument-fret-one" />
+                <span className="instrument-fret instrument-fret-two" />
+                <span className="instrument-note-marker instrument-note-one" />
+                <span className="instrument-note-marker instrument-note-two" />
+                <span className="instrument-note-marker instrument-note-three" />
+              </span>
+              <span className="instrument-label">
+                <strong>{option.label}</strong>
+                <small>{option.stringCount} strings</small>
+              </span>
             </button>
           ))}
         </div>
       </header>
 
       <section className="scale-controls" aria-label="Scale selection">
+        <div className="primary-controls">
         <label>
           <span>Root</span>
           <select
@@ -140,6 +178,8 @@ function App() {
             <span>Focus interval</span>
             <select
               value={focusedInterval}
+              disabled={chordToneMode !== 'off'}
+              aria-describedby={chordToneMode !== 'off' ? 'focus-disabled-reason' : undefined}
               onChange={(event) => {
                 setFocusedInterval(event.target.value as IntervalFocus)
               }}
@@ -155,17 +195,24 @@ function App() {
               ))}
             </select>
           </label>
-          {focusedIntervalExists && (
-            <output aria-live="polite">Focusing {focusedInterval}</output>
-          )}
-          {focusedInterval !== 'all' && !focusedIntervalExists && (
-            <output className="missing-focus-message" aria-live="polite">
-              <span>
-                {focusedInterval} is not part of {root} {SCALE_LABELS[scaleName]}
-              </span>
-              <span>Scale intervals: {focusOptions.join(' · ')}</span>
-            </output>
-          )}
+        </div>
+
+        <div className="chord-tone-control">
+          <label>
+            <span>Chord tones</span>
+            <select
+              value={chordToneMode}
+              onChange={(event) => {
+                setChordToneMode(event.target.value as ChordToneMode)
+              }}
+            >
+              {CHORD_TONE_MODES.map((mode) => (
+                <option key={mode} value={mode}>
+                  {mode[0].toUpperCase() + mode.slice(1)}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
         <fieldset className="display-mode-control">
@@ -206,9 +253,75 @@ function App() {
             </button>
           </div>
         </fieldset>
+        </div>
 
-        {fretboardView === 'position' && (
-          <div className="position-controls" onBlur={handlePositionControlsBlur}>
+        <div className="secondary-controls">
+          <div className="learning-context">
+            {chordToneMode === 'off' && focusedIntervalExists && (
+              <output className="focus-status" aria-live="polite">
+                Focusing {focusedInterval}
+              </output>
+            )}
+            {chordToneMode === 'off'
+              && focusedInterval !== 'all'
+              && !focusedIntervalExists && (
+              <output className="missing-focus-message" aria-live="polite">
+                <span>
+                  {focusedInterval} is not part of {root} {SCALE_LABELS[scaleName]}
+                </span>
+                <span>Scale intervals: {focusOptions.join(' · ')}</span>
+              </output>
+            )}
+            {chordToneMode !== 'off' && chordToneResult?.supported && (
+              <output className="chord-tone-summary" aria-live="polite">
+                <span className="active-state-badge" id="focus-disabled-reason">
+                  Chord tones active
+                </span>
+                <strong>
+                  {root} {SCALE_LABELS[scaleName]} ·{' '}
+                  {chordToneMode[0].toUpperCase() + chordToneMode.slice(1)}
+                </strong>
+                <span>{chordToneResult.tones.map(({ interval }) => interval).join(' · ')}</span>
+                <span>{chordToneResult.tones.map(({ note }) => note).join(' · ')}</span>
+                {scaleName === 'blues' && blueNote && (
+                  <span className="blue-note-explanation">
+                    Blue note: {blueNote.interval} ({blueNote.note})<br />
+                    The perfect 5 is the chord tone; b5 is a blues color tone.
+                  </span>
+                )}
+              </output>
+            )}
+            {chordToneMode !== 'off' && chordToneResult && !chordToneResult.supported && (
+              <output className="chord-tone-summary chord-tone-error" aria-live="polite">
+                <span className="active-state-badge" id="focus-disabled-reason">
+                  Chord tones active
+                </span>
+                <strong>
+                  Cannot build a complete {chordToneMode} chord from this scale.
+                </strong>
+                {chordToneResult.missingDegrees.length > 0 && (
+                  <span>Missing degrees: {chordToneResult.missingDegrees.join(', ')}</span>
+                )}
+                {chordToneResult.ambiguousDegrees.length > 0 && (
+                  <span>Ambiguous degrees: {chordToneResult.ambiguousDegrees.join(', ')}</span>
+                )}
+              </output>
+            )}
+            {showBlueNoteOption && (
+              <label className="toggle-control">
+                <input
+                  type="checkbox"
+                  checked={includeBlueNote}
+                  onChange={(event) => setIncludeBlueNote(event.target.checked)}
+                />
+                <span>Include blue note</span>
+              </label>
+            )}
+          </div>
+
+          <div className="fretboard-context-controls">
+          {fretboardView === 'position' && (
+            <div className="position-controls" onBlur={handlePositionControlsBlur}>
             <label>
               <span>Start fret</span>
               <input
@@ -244,17 +357,19 @@ function App() {
               />
             </label>
             <output aria-live="polite">Frets {positionStart}–{positionEnd}</output>
-          </div>
-        )}
+            </div>
+          )}
 
-        <label className="other-notes-control">
-          <input
-            type="checkbox"
-            checked={showOtherNotes}
-            onChange={(event) => setShowOtherNotes(event.target.checked)}
-          />
-          <span>Show other notes</span>
-        </label>
+          <label className="toggle-control visibility-toggle">
+            <input
+              type="checkbox"
+              checked={showOtherNotes}
+              onChange={(event) => setShowOtherNotes(event.target.checked)}
+            />
+            <span>Show other notes</span>
+          </label>
+          </div>
+        </div>
       </section>
 
       {modeRelationship && (
@@ -279,9 +394,11 @@ function App() {
       )}
 
       <Fretboard
+        blueNoteInterval={showBlueNoteOption && includeBlueNote ? blueNote?.interval : null}
+        chordToneIntervals={chordToneIntervals}
         displayMode={displayMode}
         focusedInterval={focusedInterval}
-        focusedIntervalExists={focusedIntervalExists}
+        focusedIntervalExists={chordToneMode === 'off' && focusedIntervalExists}
         fretRange={fretRange}
         instrument={instrument}
         root={root}

@@ -14,6 +14,8 @@ const DOUBLE_MARKER_FRETS = new Set([12, 24])
 export type DisplayMode = 'notes' | 'intervals' | 'both'
 
 type FretboardProps = {
+  blueNoteInterval: IntervalLabel | null | undefined
+  chordToneIntervals: readonly IntervalLabel[] | null
   displayMode: DisplayMode
   focusedInterval: 'all' | IntervalLabel
   focusedIntervalExists: boolean
@@ -44,6 +46,8 @@ function FretMarker({ fret }: { fret: number }) {
 }
 
 export function Fretboard({
+  blueNoteInterval,
+  chordToneIntervals,
   displayMode,
   focusedInterval,
   focusedIntervalExists,
@@ -62,6 +66,9 @@ export function Fretboard({
   const intervalsByNote = new Map(
     scaleTones.map(({ note, interval }) => [note, interval]),
   )
+  const chordToneIntervalSet = chordToneIntervals
+    ? new Set(chordToneIntervals)
+    : null
 
   return (
     <section className="fretboard-section" aria-labelledby="fretboard-title">
@@ -70,7 +77,15 @@ export function Fretboard({
         <div className="note-legend" aria-label="Note colors">
           <span><i className="legend-swatch root-note" />Root</span>
           <span><i className="legend-swatch scale-note" />Scale note</span>
-          <span><i className="legend-swatch other-note" />Other note</span>
+          {chordToneIntervals && (
+            <span><i className="legend-swatch chord-tone" />Chord tone</span>
+          )}
+          {blueNoteInterval && (
+            <span><i className="legend-swatch blue-note" />Blue note</span>
+          )}
+          {showOtherNotes && (
+            <span><i className="legend-swatch other-note" />Other note</span>
+          )}
         </div>
       </div>
 
@@ -120,6 +135,17 @@ export function Fretboard({
                       : isSubdued
                         ? ' subdued-note'
                         : ''
+                    const isChordTone = Boolean(
+                      interval && chordToneIntervalSet?.has(interval),
+                    )
+                    const chordToneClass = chordToneIntervalSet && interval
+                      ? isChordTone
+                        ? ' chord-tone'
+                        : ' subdued-note'
+                      : ''
+                    const blueNoteClass = interval === blueNoteInterval
+                      ? ' blue-note'
+                      : ''
 
                     return (
                       <td
@@ -127,7 +153,7 @@ export function Fretboard({
                         key={fret}
                       >
                         <span
-                          className={`note ${noteType}${focusClass}${isHidden ? ' hidden-note' : ''}`}
+                          className={`note ${noteType}${focusClass}${chordToneClass}${blueNoteClass}${isHidden ? ' hidden-note' : ''}`}
                         >
                           {showNoteName && <span className="note-name">{note}</span>}
                           {showInterval && (
