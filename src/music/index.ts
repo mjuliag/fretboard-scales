@@ -72,6 +72,14 @@ export type ScaleTone = {
   interval: IntervalLabel
 }
 
+export type RelativeScaleRelationship = 'relativeMinor' | 'relativeMajor'
+
+export type RelativeScale = {
+  relativeRoot: PitchClass
+  relativeScale: 'major' | 'naturalMinor' | 'ionian' | 'aeolian'
+  relationship: RelativeScaleRelationship
+}
+
 export type ChordToneMode = 'off' | 'triad' | 'seventh'
 
 export type ChordToneResult =
@@ -151,6 +159,29 @@ export function generateScale(
 
 export function getScale(root: PitchClass, scale: ScaleName): PitchClass[] {
   return generateScale(root, SCALE_INTERVALS[scale])
+}
+
+export function getRelativeScale(
+  root: PitchClass,
+  scale: ScaleName,
+): RelativeScale | null {
+  if (scale === 'major' || scale === 'ionian') {
+    return {
+      relativeRoot: getScale(root, scale)[5],
+      relativeScale: scale === 'major' ? 'naturalMinor' : 'aeolian',
+      relationship: 'relativeMinor',
+    }
+  }
+
+  if (scale === 'naturalMinor' || scale === 'aeolian') {
+    return {
+      relativeRoot: getScale(root, scale)[2],
+      relativeScale: scale === 'naturalMinor' ? 'major' : 'ionian',
+      relationship: 'relativeMajor',
+    }
+  }
+
+  return null
 }
 
 export function getScaleTones(

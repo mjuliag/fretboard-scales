@@ -5,9 +5,86 @@ import {
   getChordTones,
   getModeRelationship,
   getNoteAtFret,
+  getRelativeScale,
   getScale,
   getScaleTones,
 } from './index.ts'
+
+describe('getRelativeScale', () => {
+  it('derives relative natural minor roots from major scale degree 6', () => {
+    assert.deepEqual(getRelativeScale('C', 'major'), {
+      relativeRoot: 'A',
+      relativeScale: 'naturalMinor',
+      relationship: 'relativeMinor',
+    })
+    assert.deepEqual(getRelativeScale('G', 'major'), {
+      relativeRoot: 'E',
+      relativeScale: 'naturalMinor',
+      relationship: 'relativeMinor',
+    })
+  })
+
+  it('derives relative major roots from natural minor scale degree 3', () => {
+    assert.deepEqual(getRelativeScale('A', 'naturalMinor'), {
+      relativeRoot: 'C',
+      relativeScale: 'major',
+      relationship: 'relativeMajor',
+    })
+    assert.deepEqual(getRelativeScale('E', 'naturalMinor'), {
+      relativeRoot: 'G',
+      relativeScale: 'major',
+      relationship: 'relativeMajor',
+    })
+  })
+
+  it('preserves Ionian and Aeolian naming semantics', () => {
+    assert.deepEqual(getRelativeScale('C', 'ionian'), {
+      relativeRoot: 'A',
+      relativeScale: 'aeolian',
+      relationship: 'relativeMinor',
+    })
+    assert.deepEqual(getRelativeScale('A', 'aeolian'), {
+      relativeRoot: 'C',
+      relativeScale: 'ionian',
+      relationship: 'relativeMajor',
+    })
+  })
+
+  it('shares pitch classes while recalculating harmony from the new root', () => {
+    const relative = getRelativeScale('C', 'major')
+    assert.ok(relative)
+    assert.deepEqual(
+      new Set(getScale('C', 'major')),
+      new Set(getScale(relative.relativeRoot, relative.relativeScale)),
+    )
+
+    const destinationChord = getChordTones(
+      getScaleTones(relative.relativeRoot, relative.relativeScale),
+      'triad',
+      relative.relativeScale,
+    )
+    assert.equal(destinationChord.supported, true)
+    assert.deepEqual(
+      destinationChord.tones.map(({ note }) => note),
+      ['A', 'C', 'E'],
+    )
+  })
+
+  it('returns null for unsupported scales and modes', () => {
+    for (const scale of [
+      'majorPentatonic',
+      'minorPentatonic',
+      'blues',
+      'dorian',
+      'phrygian',
+      'lydian',
+      'mixolydian',
+      'locrian',
+    ] as const) {
+      assert.equal(getRelativeScale('C', scale), null)
+    }
+  })
+})
 
 function chordToneValues(
   root: Parameters<typeof getScaleTones>[0],

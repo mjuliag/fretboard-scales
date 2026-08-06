@@ -7,6 +7,7 @@ import {
   type PitchClass,
   type ScaleTone,
 } from '../music'
+import type { ThreeNpsNote } from '../music/threeNps'
 
 const SINGLE_MARKER_FRETS = new Set([3, 5, 7, 9, 15, 17, 19, 21])
 const DOUBLE_MARKER_FRETS = new Set([12, 24])
@@ -14,6 +15,7 @@ const DOUBLE_MARKER_FRETS = new Set([12, 24])
 export type DisplayMode = 'notes' | 'intervals' | 'both'
 
 type FretboardProps = {
+  activePatternNotes: readonly ThreeNpsNote[] | null
   blueNoteInterval: IntervalLabel | null | undefined
   chordToneIntervals: readonly IntervalLabel[] | null
   displayMode: DisplayMode
@@ -46,6 +48,7 @@ function FretMarker({ fret }: { fret: number }) {
 }
 
 export function Fretboard({
+  activePatternNotes,
   blueNoteInterval,
   chordToneIntervals,
   displayMode,
@@ -68,6 +71,11 @@ export function Fretboard({
   )
   const chordToneIntervalSet = chordToneIntervals
     ? new Set(chordToneIntervals)
+    : null
+  const activePatternCoordinates = activePatternNotes
+    ? new Set(activePatternNotes.map(
+      ({ fret, stringIndex }) => `${stringIndex}:${fret}`,
+    ))
     : null
 
   return (
@@ -107,6 +115,7 @@ export function Fretboard({
           </thead>
           <tbody>
             {stringsFromHighToLow.map((openString, stringIndex) => {
+              const tuningStringIndex = tuning.length - stringIndex - 1
               const stringThickness = 1 + stringIndex * 0.7
               const rowStyle = {
                 '--string-thickness': `${stringThickness}px`,
@@ -116,8 +125,12 @@ export function Fretboard({
                 <tr key={`${openString}-${stringIndex}`} style={rowStyle}>
                   {frets.map((fret) => {
                     const note = getNoteAtFret(openString, fret)
-                    const interval = intervalsByNote.get(note)
-                    const noteType = note === root
+                    const isActivePatternCoordinate = !activePatternCoordinates
+                      || activePatternCoordinates.has(`${tuningStringIndex}:${fret}`)
+                    const interval = isActivePatternCoordinate
+                      ? intervalsByNote.get(note)
+                      : undefined
+                    const noteType = note === root && interval
                       ? 'root-note'
                       : interval
                         ? 'scale-note'

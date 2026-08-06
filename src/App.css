@@ -188,6 +188,93 @@ h1 {
   gap: 1rem;
 }
 
+.pattern-controls {
+  display: flex;
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.pattern-mode-control,
+.three-nps-position-control {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.pattern-mode-control legend,
+.three-nps-position-control legend {
+  margin-bottom: 0.35rem;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pattern-mode-control div,
+.three-nps-position-control div {
+  display: flex;
+}
+
+.pattern-mode-control button,
+.three-nps-position-control button {
+  min-height: 2.75rem;
+  padding: 0.62rem 0.7rem;
+  border: 1px solid #3b4659;
+  color: #94a3b8;
+  background: #1b2230;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.three-nps-position-control button {
+  min-width: 2.75rem;
+}
+
+.pattern-mode-control button:first-child,
+.three-nps-position-control button:first-child {
+  border-radius: 0.5rem 0 0 0.5rem;
+}
+
+.pattern-mode-control button:last-child,
+.three-nps-position-control button:last-child {
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+
+.pattern-mode-control button:not(:first-child),
+.three-nps-position-control button:not(:first-child) {
+  margin-left: -1px;
+}
+
+.pattern-mode-control button.selected,
+.three-nps-position-control button.selected {
+  position: relative;
+  border-color: #22d3ee;
+  color: #ecfeff;
+  background: #164e63;
+}
+
+.pattern-mode-control button:focus-visible,
+.three-nps-position-control button:focus-visible {
+  z-index: 1;
+  outline: 2px solid #22d3ee;
+  outline-offset: 2px;
+}
+
+.pattern-mode-control button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.pattern-availability {
+  margin: 0 0 0.6rem;
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
 .secondary-controls {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -303,6 +390,70 @@ h1 {
   color: #a5f3fc;
   font-size: 0.75rem;
   line-height: 1.25;
+}
+
+.three-nps-summary {
+  display: grid;
+  gap: 0.12rem;
+  color: #a5f3fc;
+  font-size: 0.75rem;
+  line-height: 1.25;
+}
+
+.three-nps-summary strong {
+  color: #f5d0fe;
+}
+
+.relative-scale-info {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.45rem 0.55rem;
+  border-left: 0.15rem solid #22d3ee;
+  border-radius: 0.4rem;
+  background: linear-gradient(110deg, rgb(8 145 178 / 12%), rgb(192 38 211 / 7%));
+}
+
+.relative-scale-copy {
+  display: grid;
+  gap: 0.08rem;
+  min-width: 0;
+  color: #a5f3fc;
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.relative-scale-copy strong {
+  color: #f5d0fe;
+}
+
+.relative-scale-copy small {
+  color: #94a3b8;
+  font-size: 0.68rem;
+}
+
+.relative-scale-info button {
+  min-height: 2.75rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid #155e75;
+  border-radius: 0.45rem;
+  color: #ecfeff;
+  background: #164e63;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.relative-scale-info button:hover {
+  border-color: #22d3ee;
+}
+
+.relative-scale-info button:focus-visible {
+  outline: 2px solid #22d3ee;
+  outline-offset: 2px;
 }
 
 .chord-tone-summary strong {
@@ -781,6 +932,10 @@ h1 {
   .secondary-controls {
     align-items: start;
   }
+
+  .pattern-controls {
+    flex-wrap: wrap;
+  }
 }
 
 @media (max-width: 36rem) {
@@ -826,6 +981,39 @@ h1 {
   .scale-controls {
     gap: 0.5rem;
     margin-top: 0.75rem;
+  }
+
+  .pattern-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+
+  .pattern-mode-control legend,
+  .three-nps-position-control legend {
+    margin-bottom: 0.2rem;
+    font-size: 0.68rem;
+  }
+
+  .pattern-mode-control div,
+  .three-nps-position-control div {
+    width: 100%;
+  }
+
+  .pattern-mode-control button,
+  .three-nps-position-control button {
+    flex: 1 1 0;
+    min-height: 2.75rem;
+    padding: 0.45rem 0.3rem;
+  }
+
+  .pattern-mode-control button {
+    min-width: 0;
+  }
+
+  .pattern-availability {
+    margin: 0;
+    font-size: 0.7rem;
   }
 
   .primary-controls {
@@ -909,6 +1097,21 @@ h1 {
   .chord-tone-summary {
     min-width: 0;
     font-size: 0.7rem;
+  }
+
+  .three-nps-summary {
+    font-size: 0.7rem;
+  }
+
+  .relative-scale-info {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.4rem;
+    width: 100%;
+    padding: 0.45rem 0.5rem;
+  }
+
+  .relative-scale-info button {
+    width: 100%;
   }
 
   .blue-note-explanation {

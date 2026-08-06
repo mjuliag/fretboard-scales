@@ -4,6 +4,7 @@ import { isValidFretDraft, parseFretRangeDraft } from './fretRange'
 import {
   getModeRelationship,
   getChordTones,
+  getRelativeScale,
   getScaleTones,
   PITCH_CLASSES,
   SCALE_INTERVAL_LABELS,
@@ -14,6 +15,15 @@ import {
   type PitchClass,
   type ScaleName,
 } from './music'
+import {
+  findEquivalentThreeNpsPosition,
+  getThreeNpsFretRange,
+  getThreeNpsPattern,
+  shiftThreeNpsPattern,
+  supportsThreeNps,
+  THREE_NPS_POSITIONS,
+  type ThreeNpsPosition,
+} from './music/threeNps'
 import './App.css'
 
 const INSTRUMENT_OPTIONS = [
@@ -47,6 +57,7 @@ const FULL_FRET_RANGE = { start: 0, end: 24 } as const
 
 type FretboardView = 'full' | 'position'
 type IntervalFocus = 'all' | IntervalLabel
+type PatternMode = 'all' | '3nps'
 
 function ordinal(degree: number): string {
   return `${degree}${degree === 1 ? 'st' : degree === 2 ? 'nd' : degree === 3 ? 'rd' : 'th'}`
@@ -66,6 +77,9 @@ function App() {
   const [positionEnd, setPositionEnd] = useState(9)
   const [positionStartDraft, setPositionStartDraft] = useState('5')
   const [positionEndDraft, setPositionEndDraft] = useState('9')
+  const [patternMode, setPatternMode] = useState<PatternMode>('all')
+  const [threeNpsPosition, setThreeNpsPosition] = useState<ThreeNpsPosition>(1)
+  const [threeNpsFretShift, setThreeNpsFretShift] = useState<-12 | 0 | 12>(0)
   const scaleTones = getScaleTones(root, scaleName)
   const chordToneResult = chordToneMode === 'off'
     ? null
@@ -82,9 +96,20 @@ function App() {
   const focusedIntervalExists = focusedInterval !== 'all'
     && focusOptions.some((interval) => interval === focusedInterval)
   const modeRelationship = getModeRelationship(root, scaleName)
-  const fretRange = fretboardView === 'full'
-    ? FULL_FRET_RANGE
-    : { start: positionStart, end: positionEnd }
+  const relativeScale = getRelativeScale(root, scaleName)
+  const threeNpsSupported = supportsThreeNps(scaleName)
+  const threeNpsActive = patternMode === '3nps' && threeNpsSupported
+  const generatedThreeNpsPattern = threeNpsActive
+    ? getThreeNpsPattern(root, scaleName, instrument, threeNpsPosition)
+    : null
+  const threeNpsPattern = generatedThreeNpsPattern
+    ? shiftThreeNpsPattern(generatedThreeNpsPattern, threeNpsFretShift)
+    : null
+  const fretRange = threeNpsPattern
+    ? getThreeNpsFretRange(threeNpsPattern)
+    : fretboardView === 'full'
+      ? FULL_FRET_RANGE
+      : { start: positionStart, end: positionEnd }
 
   function commitPositionRange() {
     const nextRange = parseFretRangeDraft(
@@ -104,6 +129,29 @@ function App() {
     if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
       commitPositionRange()
     }
+  }
+
+  function handleRelativeScaleSwitch() {
+    if (!relativeScale) return
+
+    if (threeNpsActive && threeNpsPattern) {
+      const equivalentPosition = findEquivalentThreeNpsPosition(
+        threeNpsPattern,
+        relativeScale.relativeRoot,
+        relativeScale.relativeScale,
+        instrument,
+      )
+
+      if (!equivalentPosition) return
+
+      setThreeNpsPosition(equivalentPosition.position)
+      setThreeNpsFretShift(equivalentPosition.fretShift)
+    } else {
+      setThreeNpsFretShift(0)
+    }
+
+    setRoot(relativeScale.relativeRoot)
+    setScaleName(relativeScale.relativeScale)
   }
 
   return (
@@ -149,7 +197,10 @@ function App() {
           <span>Root</span>
           <select
             value={root}
-            onChange={(event) => setRoot(event.target.value as PitchClass)}
+            onChange={(event) => {
+              setRoot(event.target.value as PitchClass)
+              setThreeNpsFretShift(0)
+            }}
           >
             {PITCH_CLASSES.map((note) => (
               <option key={note} value={note}>
@@ -163,7 +214,10 @@ function App() {
           <span>Scale</span>
           <select
             value={scaleName}
-            onChange={(event) => setScaleName(event.target.value as ScaleName)}
+            onChange={(event) => {
+              setScaleName(event.target.value as ScaleName)
+              setThreeNpsFretShift(0)
+            }}
           >
             {SCALE_OPTIONS.map((name) => (
               <option key={name} value={name}>
@@ -255,8 +309,92 @@ function App() {
         </fieldset>
         </div>
 
+        <div className="pattern-controls">
+          <fieldset className="pattern-mode-control">
+            <legend>Pattern</legend>
+            <div>
+              <button
+                type="button"
+                className={!threeNpsActive ? 'selected' : ''}
+                aria-pressed={!threeNpsActive}
+                onClick={() => setPatternMode('all')}
+              >
+                All Notes
+              </button>
+              <button
+                type="button"
+                className={threeNpsActive ? 'selected' : ''}
+                aria-pressed={threeNpsActive}
+                disabled={!threeNpsSupported}
+                onClick={() => setPatternMode('3nps')}
+              >
+                3NPS
+              </button>
+            </div>
+          </fieldset>
+
+          {threeNpsActive && (
+            <fieldset className="three-nps-position-control">
+              <legend>3NPS Position</legend>
+              <div>
+                {THREE_NPS_POSITIONS.map((position) => (
+                  <button
+                    type="button"
+                    className={threeNpsPosition === position ? 'selected' : ''}
+                    aria-label={`3NPS position ${position}`}
+                    aria-pressed={threeNpsPosition === position}
+                    key={position}
+                    onClick={() => {
+                      setThreeNpsPosition(position)
+                      setThreeNpsFretShift(0)
+                    }}
+                  >
+                    {position}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          )}
+
+          {!threeNpsSupported && (
+            <p className="pattern-availability">
+              Classic 3NPS is available for seven-note scales and modes.
+            </p>
+          )}
+        </div>
+
         <div className="secondary-controls">
           <div className="learning-context">
+            {relativeScale && (
+              <aside className="relative-scale-info" aria-label="Relative scale">
+                <div className="relative-scale-copy">
+                  <strong>{root} {SCALE_LABELS[scaleName]}</strong>
+                  <span>
+                    {relativeScale.relationship === 'relativeMinor'
+                      ? 'Relative minor'
+                      : 'Relative major'}:{' '}
+                    {relativeScale.relativeRoot}{' '}
+                    {SCALE_LABELS[relativeScale.relativeScale]}
+                  </span>
+                  <small>Same notes · different tonal center</small>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRelativeScaleSwitch}
+                >
+                  Switch to {relativeScale.relativeRoot}{' '}
+                  {SCALE_LABELS[relativeScale.relativeScale]}
+                </button>
+              </aside>
+            )}
+            {threeNpsPattern && (
+              <output className="three-nps-summary" aria-live="polite">
+                <strong>
+                  {root} {SCALE_LABELS[scaleName]} · 3NPS · Position {threeNpsPosition}
+                </strong>
+                <span>3 notes per string</span>
+              </output>
+            )}
             {chordToneMode === 'off' && focusedIntervalExists && (
               <output className="focus-status" aria-live="polite">
                 Focusing {focusedInterval}
@@ -394,6 +532,7 @@ function App() {
       )}
 
       <Fretboard
+        activePatternNotes={threeNpsPattern?.notes ?? null}
         blueNoteInterval={showBlueNoteOption && includeBlueNote ? blueNote?.interval : null}
         chordToneIntervals={chordToneIntervals}
         displayMode={displayMode}
