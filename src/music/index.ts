@@ -49,6 +49,11 @@ export type ModeRelationship = {
   parentRoot: PitchClass
 }
 
+export type ParentMajorScale = {
+  parentRoot: PitchClass
+  parentScale: 'major'
+}
+
 export const SCALE_INTERVAL_LABELS = {
   major: ['1', '2', '3', '4', '5', '6', '7'],
   naturalMinor: ['1', '2', 'b3', '4', '5', 'b6', 'b7'],
@@ -78,6 +83,12 @@ export type RelativeScale = {
   relativeRoot: PitchClass
   relativeScale: 'major' | 'naturalMinor' | 'ionian' | 'aeolian'
   relationship: RelativeScaleRelationship
+}
+
+export type ScaleNavigationRelationship = {
+  destinationRoot: PitchClass
+  destinationScale: 'major' | 'naturalMinor' | 'ionian' | 'aeolian'
+  label: 'Relative minor' | 'Relative major' | 'Parent major'
 }
 
 export type ChordToneMode = 'off' | 'triad' | 'seventh'
@@ -139,6 +150,17 @@ export function getModeRelationship(
   }
 }
 
+export function getParentMajorScale(
+  root: PitchClass,
+  scale: ScaleName,
+): ParentMajorScale | null {
+  const relationship = getModeRelationship(root, scale)
+
+  return relationship
+    ? { parentRoot: relationship.parentRoot, parentScale: 'major' }
+    : null
+}
+
 export function getNoteAtFret(
   openString: PitchClass,
   fret: number,
@@ -182,6 +204,35 @@ export function getRelativeScale(
   }
 
   return null
+}
+
+export function getScaleNavigationRelationship(
+  root: PitchClass,
+  scale: ScaleName,
+): ScaleNavigationRelationship | null {
+  const relative = getRelativeScale(root, scale)
+
+  // Keep the established relative-scale presentation for Ionian/Aeolian.
+  // This also prevents Aeolian from showing two links to the same note set.
+  if (relative) {
+    return {
+      destinationRoot: relative.relativeRoot,
+      destinationScale: relative.relativeScale,
+      label: relative.relationship === 'relativeMinor'
+        ? 'Relative minor'
+        : 'Relative major',
+    }
+  }
+
+  const mode = getModeRelationship(root, scale)
+  const parent = getParentMajorScale(root, scale)
+  if (!mode || !parent || mode.degree === 1) return null
+
+  return {
+    destinationRoot: parent.parentRoot,
+    destinationScale: parent.parentScale,
+    label: 'Parent major',
+  }
 }
 
 export function getScaleTones(

@@ -1,10 +1,11 @@
 import { useState, type FocusEvent } from 'react'
 import { Fretboard, type DisplayMode } from './components/Fretboard'
+import { ScaleRelationshipInfo } from './components/ScaleRelationshipInfo'
 import { isValidFretDraft, parseFretRangeDraft } from './fretRange'
 import {
   getModeRelationship,
   getChordTones,
-  getRelativeScale,
+  getScaleNavigationRelationship,
   getScaleTones,
   PITCH_CLASSES,
   SCALE_INTERVAL_LABELS,
@@ -96,7 +97,7 @@ function App() {
   const focusedIntervalExists = focusedInterval !== 'all'
     && focusOptions.some((interval) => interval === focusedInterval)
   const modeRelationship = getModeRelationship(root, scaleName)
-  const relativeScale = getRelativeScale(root, scaleName)
+  const scaleRelationship = getScaleNavigationRelationship(root, scaleName)
   const threeNpsSupported = supportsThreeNps(scaleName)
   const threeNpsActive = patternMode === '3nps' && threeNpsSupported
   const generatedThreeNpsPattern = threeNpsActive
@@ -131,14 +132,14 @@ function App() {
     }
   }
 
-  function handleRelativeScaleSwitch() {
-    if (!relativeScale) return
+  function handleScaleRelationshipSwitch() {
+    if (!scaleRelationship) return
 
     if (threeNpsActive && threeNpsPattern) {
       const equivalentPosition = findEquivalentThreeNpsPosition(
         threeNpsPattern,
-        relativeScale.relativeRoot,
-        relativeScale.relativeScale,
+        scaleRelationship.destinationRoot,
+        scaleRelationship.destinationScale,
         instrument,
       )
 
@@ -150,8 +151,8 @@ function App() {
       setThreeNpsFretShift(0)
     }
 
-    setRoot(relativeScale.relativeRoot)
-    setScaleName(relativeScale.relativeScale)
+    setRoot(scaleRelationship.destinationRoot)
+    setScaleName(scaleRelationship.destinationScale)
   }
 
   return (
@@ -365,27 +366,14 @@ function App() {
 
         <div className="secondary-controls">
           <div className="learning-context">
-            {relativeScale && (
-              <aside className="relative-scale-info" aria-label="Relative scale">
-                <div className="relative-scale-copy">
-                  <strong>{root} {SCALE_LABELS[scaleName]}</strong>
-                  <span>
-                    {relativeScale.relationship === 'relativeMinor'
-                      ? 'Relative minor'
-                      : 'Relative major'}:{' '}
-                    {relativeScale.relativeRoot}{' '}
-                    {SCALE_LABELS[relativeScale.relativeScale]}
-                  </span>
-                  <small>Same notes · different tonal center</small>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleRelativeScaleSwitch}
-                >
-                  Switch to {relativeScale.relativeRoot}{' '}
-                  {SCALE_LABELS[relativeScale.relativeScale]}
-                </button>
-              </aside>
+            {scaleRelationship && (
+              <ScaleRelationshipInfo
+                destinationLabel={`${scaleRelationship.destinationRoot} ${SCALE_LABELS[scaleRelationship.destinationScale]}`}
+                modeRelationship={modeRelationship}
+                navigation={scaleRelationship}
+                onNavigate={handleScaleRelationshipSwitch}
+                sourceLabel={`${root} ${SCALE_LABELS[scaleName]}`}
+              />
             )}
             {threeNpsPattern && (
               <output className="three-nps-summary" aria-live="polite">

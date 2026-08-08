@@ -5,7 +5,9 @@ import {
   getChordTones,
   getModeRelationship,
   getNoteAtFret,
+  getParentMajorScale,
   getRelativeScale,
+  getScaleNavigationRelationship,
   getScale,
   getScaleTones,
 } from './index.ts'
@@ -83,6 +85,116 @@ describe('getRelativeScale', () => {
     ] as const) {
       assert.equal(getRelativeScale('C', scale), null)
     }
+  })
+})
+
+describe('getScaleNavigationRelationship', () => {
+  it('derives every C-major mode parent without root mappings', () => {
+    for (const [root, scale] of [
+      ['C', 'ionian'],
+      ['D', 'dorian'],
+      ['E', 'phrygian'],
+      ['F', 'lydian'],
+      ['G', 'mixolydian'],
+      ['A', 'aeolian'],
+      ['B', 'locrian'],
+    ] as const) {
+      assert.deepEqual(getParentMajorScale(root, scale), {
+        parentRoot: 'C',
+        parentScale: 'major',
+      })
+      assert.deepEqual(
+        new Set(getScale(root, scale)),
+        new Set(getScale('C', 'major')),
+      )
+    }
+  })
+
+  it('derives a parent major outside C', () => {
+    assert.deepEqual(getParentMajorScale('A', 'dorian'), {
+      parentRoot: 'G',
+      parentScale: 'major',
+    })
+    assert.deepEqual(getScaleNavigationRelationship('A', 'dorian'), {
+      destinationRoot: 'G',
+      destinationScale: 'major',
+      label: 'Parent major',
+    })
+    assert.deepEqual(
+      new Set(getScale('A', 'dorian')),
+      new Set(getScale('G', 'major')),
+    )
+  })
+
+  it('uses the existing relative action for Aeolian and avoids Ionian self-links', () => {
+    assert.deepEqual(getScaleNavigationRelationship('A', 'aeolian'), {
+      destinationRoot: 'C',
+      destinationScale: 'ionian',
+      label: 'Relative major',
+    })
+    assert.equal(getScaleNavigationRelationship('C', 'ionian')?.label, 'Relative minor')
+    assert.equal(getScaleNavigationRelationship('C', 'major')?.label, 'Relative minor')
+  })
+
+  it('exposes parent navigation for the other modal tonal centers', () => {
+    for (const [root, scale] of [
+      ['D', 'dorian'],
+      ['E', 'phrygian'],
+      ['F', 'lydian'],
+      ['G', 'mixolydian'],
+      ['B', 'locrian'],
+    ] as const) {
+      assert.deepEqual(getScaleNavigationRelationship(root, scale), {
+        destinationRoot: 'C',
+        destinationScale: 'major',
+        label: 'Parent major',
+      })
+    }
+  })
+
+  it('exposes the educational degree and parent for representative modes', () => {
+    assert.deepEqual(getModeRelationship('D', 'dorian'), {
+      degree: 2,
+      parentRoot: 'C',
+    })
+    assert.deepEqual(getModeRelationship('G', 'mixolydian'), {
+      degree: 5,
+      parentRoot: 'C',
+    })
+    assert.deepEqual(getModeRelationship('B', 'locrian'), {
+      degree: 7,
+      parentRoot: 'C',
+    })
+  })
+
+  it('keeps Aeolian theory separate from its single relative navigation', () => {
+    assert.deepEqual(getModeRelationship('A', 'aeolian'), {
+      degree: 6,
+      parentRoot: 'C',
+    })
+    assert.deepEqual(getParentMajorScale('A', 'aeolian'), {
+      parentRoot: 'C',
+      parentScale: 'major',
+    })
+    assert.deepEqual(getScaleNavigationRelationship('A', 'aeolian'), {
+      destinationRoot: 'C',
+      destinationScale: 'ionian',
+      label: 'Relative major',
+    })
+  })
+
+  it('recomputes chord tones and degree interpretation at the parent root', () => {
+    const destinationTones = getScaleTones('C', 'major')
+    const destinationChord = getChordTones(destinationTones, 'seventh', 'major')
+    assert.equal(destinationChord.supported, true)
+    assert.deepEqual(
+      destinationChord.tones.map(({ interval, note }) => [interval, note]),
+      [['1', 'C'], ['3', 'E'], ['5', 'G'], ['7', 'B']],
+    )
+    assert.deepEqual(destinationTones.find(({ interval }) => interval === '4'), {
+      interval: '4',
+      note: 'F',
+    })
   })
 })
 

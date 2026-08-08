@@ -59,6 +59,33 @@ function mapRelativePattern(
 }
 
 describe('classic 3NPS guitar patterns', () => {
+  for (const instrument of ['guitar', 'bass'] as const) {
+    it(`preserves every modal parent-major shape and fret bound on ${instrument}`, () => {
+      for (const [root, scale, parentRoot] of [
+        ['D', 'dorian', 'C'],
+        ['E', 'phrygian', 'C'],
+        ['F', 'lydian', 'C'],
+        ['G', 'mixolydian', 'C'],
+        ['A', 'aeolian', 'C'],
+        ['B', 'locrian', 'C'],
+        ['A', 'dorian', 'G'],
+      ] as const) {
+        for (const position of THREE_NPS_POSITIONS) {
+          const modalPattern = getThreeNpsPattern(root, scale, instrument, position)
+          assert.ok(modalPattern)
+          const parentPattern = mapRelativePattern(
+            modalPattern,
+            parentRoot,
+            'major',
+            instrument,
+          )
+          assert.deepEqual(coordinates(parentPattern), coordinates(modalPattern))
+          assert.ok(parentPattern.notes.every(({ fret }) => fret >= 0 && fret <= 24))
+        }
+      }
+    })
+  }
+
   it('matches canonical C Major Position 1 coordinates', () => {
     const pattern = getThreeNpsPattern('C', 'major', 'guitar', 1)
 
