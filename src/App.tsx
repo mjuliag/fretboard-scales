@@ -1,7 +1,15 @@
 import { useState, type FocusEvent } from 'react'
-import { Fretboard, type DisplayMode } from './components/Fretboard'
+import { Fretboard } from './components/Fretboard'
 import { ScaleRelationshipInfo } from './components/ScaleRelationshipInfo'
+import { ViewControl } from './components/ViewControl'
+import { PatternModeControl, type PatternMode } from './components/PatternModeControl'
 import { isValidFretDraft, parseFretRangeDraft } from './fretRange'
+import {
+  DEFAULT_APP_CONTROL_STATE,
+  transitionPatternMode,
+  type AppControlState,
+  type IntervalFocus,
+} from './appControlState'
 import {
   getModeRelationship,
   getChordTones,
@@ -12,7 +20,6 @@ import {
   SCALE_INTERVALS,
   type Instrument,
   type ChordToneMode,
-  type IntervalLabel,
   type PitchClass,
   type ScaleName,
 } from './music'
@@ -23,7 +30,6 @@ import {
   shiftThreeNpsPattern,
   supportsThreeNps,
   THREE_NPS_POSITIONS,
-  type ThreeNpsPosition,
 } from './music/threeNps'
 import './App.css'
 
@@ -56,30 +62,29 @@ const DISPLAY_MODES = ['notes', 'intervals', 'both'] as const
 const CHORD_TONE_MODES = ['off', 'triad', 'seventh'] as const
 const FULL_FRET_RANGE = { start: 0, end: 24 } as const
 
-type FretboardView = 'full' | 'position'
-type IntervalFocus = 'all' | IntervalLabel
-type PatternMode = 'all' | '3nps'
-
 function ordinal(degree: number): string {
   return `${degree}${degree === 1 ? 'st' : degree === 2 ? 'nd' : degree === 3 ? 'rd' : 'th'}`
 }
 
 function App() {
   const [instrument, setInstrument] = useState<Instrument>('bass')
-  const [root, setRoot] = useState<PitchClass>('A')
-  const [scaleName, setScaleName] = useState<ScaleName>('minorPentatonic')
-  const [displayMode, setDisplayMode] = useState<DisplayMode>('both')
+  const [controlState, setControlState] = useState(DEFAULT_APP_CONTROL_STATE)
+  const {
+    chordToneMode,
+    displayMode,
+    focusedInterval,
+    fretboardView,
+    patternMode,
+    root,
+    scaleName,
+    threeNpsPosition,
+  } = controlState
   const [showOtherNotes, setShowOtherNotes] = useState(true)
-  const [focusedInterval, setFocusedInterval] = useState<IntervalFocus>('all')
-  const [chordToneMode, setChordToneMode] = useState<ChordToneMode>('off')
   const [includeBlueNote, setIncludeBlueNote] = useState(false)
-  const [fretboardView, setFretboardView] = useState<FretboardView>('full')
   const [positionStart, setPositionStart] = useState(5)
   const [positionEnd, setPositionEnd] = useState(9)
   const [positionStartDraft, setPositionStartDraft] = useState('5')
   const [positionEndDraft, setPositionEndDraft] = useState('9')
-  const [patternMode, setPatternMode] = useState<PatternMode>('all')
-  const [threeNpsPosition, setThreeNpsPosition] = useState<ThreeNpsPosition>(1)
   const [threeNpsFretShift, setThreeNpsFretShift] = useState<-12 | 0 | 12>(0)
   const scaleTones = getScaleTones(root, scaleName)
   const chordToneResult = chordToneMode === 'off'
@@ -111,6 +116,10 @@ function App() {
     : fretboardView === 'full'
       ? FULL_FRET_RANGE
       : { start: positionStart, end: positionEnd }
+
+  function updateControlState(patch: Partial<AppControlState>) {
+    setControlState((state) => ({ ...state, ...patch }))
+  }
 
   function commitPositionRange() {
     const nextRange = parseFretRangeDraft(
@@ -145,14 +154,16 @@ function App() {
 
       if (!equivalentPosition) return
 
-      setThreeNpsPosition(equivalentPosition.position)
+      updateControlState({ threeNpsPosition: equivalentPosition.position })
       setThreeNpsFretShift(equivalentPosition.fretShift)
     } else {
       setThreeNpsFretShift(0)
     }
 
-    setRoot(scaleRelationship.destinationRoot)
-    setScaleName(scaleRelationship.destinationScale)
+    updateControlState({
+      root: scaleRelationship.destinationRoot,
+      scaleName: scaleRelationship.destinationScale,
+    })
   }
 
   return (
@@ -199,7 +210,7 @@ function App() {
           <select
             value={root}
             onChange={(event) => {
-              setRoot(event.target.value as PitchClass)
+              updateControlState({ root: event.target.value as PitchClass })
               setThreeNpsFretShift(0)
             }}
           >
@@ -216,7 +227,7 @@ function App() {
           <select
             value={scaleName}
             onChange={(event) => {
-              setScaleName(event.target.value as ScaleName)
+              updateControlState({ scaleName: event.target.value as ScaleName })
               setThreeNpsFretShift(0)
             }}
           >
@@ -236,7 +247,7 @@ function App() {
               disabled={chordToneMode !== 'off'}
               aria-describedby={chordToneMode !== 'off' ? 'focus-disabled-reason' : undefined}
               onChange={(event) => {
-                setFocusedInterval(event.target.value as IntervalFocus)
+                updateControlState({ focusedInterval: event.target.value as IntervalFocus })
               }}
             >
               <option value="all">All</option>
@@ -258,7 +269,7 @@ function App() {
             <select
               value={chordToneMode}
               onChange={(event) => {
-                setChordToneMode(event.target.value as ChordToneMode)
+                updateControlState({ chordToneMode: event.target.value as ChordToneMode })
               }}
             >
               {CHORD_TONE_MODES.map((mode) => (
@@ -279,7 +290,7 @@ function App() {
                 className={displayMode === mode ? 'selected' : ''}
                 aria-pressed={displayMode === mode}
                 key={mode}
-                onClick={() => setDisplayMode(mode)}
+                onClick={() => updateControlState({ displayMode: mode })}
               >
                 {mode}
               </button>
@@ -287,52 +298,21 @@ function App() {
           </div>
         </fieldset>
 
-        <fieldset className="view-control">
-          <legend>View</legend>
-          <div>
-            <button
-              type="button"
-              className={fretboardView === 'full' ? 'selected' : ''}
-              aria-pressed={fretboardView === 'full'}
-              onClick={() => setFretboardView('full')}
-            >
-              Full fretboard
-            </button>
-            <button
-              type="button"
-              className={fretboardView === 'position' ? 'selected' : ''}
-              aria-pressed={fretboardView === 'position'}
-              onClick={() => setFretboardView('position')}
-            >
-              Position
-            </button>
-          </div>
-        </fieldset>
+        <ViewControl
+          onChange={(fretboardView) => updateControlState({ fretboardView })}
+          value={fretboardView}
+          visible={!threeNpsActive}
+        />
         </div>
 
         <div className="pattern-controls">
-          <fieldset className="pattern-mode-control">
-            <legend>Pattern</legend>
-            <div>
-              <button
-                type="button"
-                className={!threeNpsActive ? 'selected' : ''}
-                aria-pressed={!threeNpsActive}
-                onClick={() => setPatternMode('all')}
-              >
-                All Notes
-              </button>
-              <button
-                type="button"
-                className={threeNpsActive ? 'selected' : ''}
-                aria-pressed={threeNpsActive}
-                disabled={!threeNpsSupported}
-                onClick={() => setPatternMode('3nps')}
-              >
-                3NPS
-              </button>
-            </div>
-          </fieldset>
+          <PatternModeControl
+            activeMode={threeNpsActive ? '3nps' : 'all'}
+            onChange={(nextPatternMode: PatternMode) => {
+              setControlState((state) => transitionPatternMode(state, nextPatternMode))
+            }}
+            threeNpsSupported={threeNpsSupported}
+          />
 
           {threeNpsActive && (
             <fieldset className="three-nps-position-control">
@@ -346,7 +326,7 @@ function App() {
                     aria-pressed={threeNpsPosition === position}
                     key={position}
                     onClick={() => {
-                      setThreeNpsPosition(position)
+                      updateControlState({ threeNpsPosition: position })
                       setThreeNpsFretShift(0)
                     }}
                   >
