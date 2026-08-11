@@ -1,18 +1,26 @@
 import { createElement } from 'react'
 
-export type PatternMode = 'all' | '3nps'
+export type PatternMode = 'all' | '3nps' | 'pentatonic'
 
 type PatternModeControlProps = {
   activeMode: PatternMode
   onChange: (mode: PatternMode) => void
   threeNpsSupported: boolean
+  pentatonicSupported: boolean
 }
 
 export function PatternModeControl({
   activeMode,
   onChange,
   threeNpsSupported,
+  pentatonicSupported,
 }: PatternModeControlProps) {
+  const supportedMode = threeNpsSupported
+    ? '3nps'
+    : pentatonicSupported
+      ? 'pentatonic'
+      : '3nps'
+  const supported = threeNpsSupported || pentatonicSupported
   return createElement(
     'fieldset',
     { className: 'pattern-mode-control' },
@@ -33,13 +41,13 @@ export function PatternModeControl({
       createElement(
         'button',
         {
-          'aria-pressed': activeMode === '3nps',
-          className: activeMode === '3nps' ? 'selected' : '',
-          disabled: !threeNpsSupported,
-          onClick: () => onChange('3nps'),
+          'aria-pressed': activeMode === supportedMode,
+          className: activeMode === supportedMode ? 'selected' : '',
+          disabled: !supported,
+          onClick: () => onChange(supportedMode),
           type: 'button',
         },
-        '3NPS',
+        supportedMode === 'pentatonic' ? 'Pentatonic' : '3NPS',
       ),
     ),
   )

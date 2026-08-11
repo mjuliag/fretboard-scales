@@ -7,7 +7,11 @@ import {
   type PitchClass,
   type ScaleTone,
 } from '../music'
-import type { ThreeNpsNote } from '../music/threeNps'
+import { getFretboardPitch } from '../music/pitch'
+import {
+  isFretboardCoordinate,
+  type FretboardCoordinate,
+} from '../music/fretboardPosition'
 
 const SINGLE_MARKER_FRETS = new Set([3, 5, 7, 9, 15, 17, 19, 21])
 const DOUBLE_MARKER_FRETS = new Set([12, 24])
@@ -15,7 +19,7 @@ const DOUBLE_MARKER_FRETS = new Set([12, 24])
 export type DisplayMode = 'notes' | 'intervals' | 'both'
 
 type FretboardProps = {
-  activePatternNotes: readonly ThreeNpsNote[] | null
+  activePatternNotes: readonly { fret: number; stringIndex: number }[] | null
   blueNoteInterval: IntervalLabel | null | undefined
   chordToneIntervals: readonly IntervalLabel[] | null
   displayMode: DisplayMode
@@ -26,6 +30,8 @@ type FretboardProps = {
     end: number
   }
   instrument: Instrument
+  onPlayNote?: (stringIndex: number, fret: number) => void
+  playingCoordinate: FretboardCoordinate | null
   root: PitchClass
   scaleTones: readonly ScaleTone[]
   showOtherNotes: boolean
@@ -56,6 +62,8 @@ export function Fretboard({
   focusedIntervalExists,
   fretRange,
   instrument,
+  onPlayNote,
+  playingCoordinate,
   root,
   scaleTones,
   showOtherNotes,
@@ -159,20 +167,46 @@ export function Fretboard({
                     const blueNoteClass = interval === blueNoteInterval
                       ? ' blue-note'
                       : ''
+                    const physicalPitch = onPlayNote
+                      ? getFretboardPitch(instrument, tuningStringIndex, fret)
+                      : null
+                    const playingClass = isFretboardCoordinate(
+                      playingCoordinate,
+                      tuningStringIndex,
+                      fret,
+                    )
+                      ? ' playing-note'
+                      : ''
 
                     return (
                       <td
                         className={fret === 0 ? 'open-fret' : undefined}
                         key={fret}
                       >
-                        <span
-                          className={`note ${noteType}${focusClass}${chordToneClass}${blueNoteClass}${isHidden ? ' hidden-note' : ''}`}
-                        >
-                          {showNoteName && <span className="note-name">{note}</span>}
-                          {showInterval && (
-                            <span className="interval-label">{interval}</span>
-                          )}
-                        </span>
+                        {onPlayNote && physicalPitch
+                          ? (
+                              <button
+                                type="button"
+                                className={`note playable-note ${noteType}${focusClass}${chordToneClass}${blueNoteClass}${playingClass}${isHidden ? ' hidden-note' : ''}`}
+                                aria-label={`${physicalPitch.pitchClass}${physicalPitch.octave}, string ${tuningStringIndex + 1}, fret ${fret}`}
+                                onClick={() => onPlayNote(tuningStringIndex, fret)}
+                              >
+                                {showNoteName && <span className="note-name">{note}</span>}
+                                {showInterval && (
+                                  <span className="interval-label">{interval}</span>
+                                )}
+                              </button>
+                            )
+                          : (
+                              <span
+                                className={`note ${noteType}${focusClass}${chordToneClass}${blueNoteClass}${playingClass}${isHidden ? ' hidden-note' : ''}`}
+                              >
+                                {showNoteName && <span className="note-name">{note}</span>}
+                                {showInterval && (
+                                  <span className="interval-label">{interval}</span>
+                                )}
+                              </span>
+                            )}
                       </td>
                     )
                   })}

@@ -3,6 +3,7 @@ import type { FretboardView } from './components/ViewControl'
 import type { PatternMode } from './components/PatternModeControl'
 import type { ChordToneMode, IntervalLabel, PitchClass, ScaleName } from './music'
 import type { ThreeNpsPosition } from './music/threeNps'
+import type { PentatonicPosition } from './music/pentatonicPatterns'
 
 export type IntervalFocus = 'all' | IntervalLabel
 
@@ -12,6 +13,7 @@ export type AppControlState = {
   focusedInterval: IntervalFocus
   fretboardView: FretboardView
   patternMode: PatternMode
+  pentatonicPosition: PentatonicPosition
   root: PitchClass
   scaleName: ScaleName
   threeNpsPosition: ThreeNpsPosition
@@ -23,6 +25,7 @@ export const DEFAULT_APP_CONTROL_STATE: AppControlState = {
   focusedInterval: 'all',
   fretboardView: 'full',
   patternMode: 'all',
+  pentatonicPosition: 1,
   root: 'A',
   scaleName: 'minorPentatonic',
   threeNpsPosition: 1,

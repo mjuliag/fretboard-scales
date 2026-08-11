@@ -3,7 +3,11 @@ import { describe, it } from 'node:test'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
-import { transitionPatternMode, type AppControlState } from './appControlState.ts'
+import {
+  DEFAULT_APP_CONTROL_STATE,
+  transitionPatternMode,
+  type AppControlState,
+} from './appControlState.ts'
 import { ViewControl } from './components/ViewControl.ts'
 
 function renderView(state: AppControlState): string {
@@ -22,6 +26,7 @@ describe('App Pattern/View state transition', () => {
       focusedInterval: 'b7',
       fretboardView: 'position',
       patternMode: 'all',
+      pentatonicPosition: 4,
       root: 'G',
       scaleName: 'mixolydian',
       threeNpsPosition: 6,
@@ -35,6 +40,20 @@ describe('App Pattern/View state transition', () => {
 
     const restored = transitionPatternMode(inThreeNps, 'all')
     assert.match(renderView(restored), /class="selected"[^>]*>Position/)
+    assert.deepEqual(restored, initial)
+  })
+
+  it('preserves the selected pentatonic position through All Notes', () => {
+    const initial = {
+      ...DEFAULT_APP_CONTROL_STATE,
+      patternMode: 'pentatonic' as const,
+      pentatonicPosition: 4 as const,
+    }
+
+    const allNotes = transitionPatternMode(initial, 'all')
+    const restored = transitionPatternMode(allNotes, 'pentatonic')
+
+    assert.equal(allNotes.pentatonicPosition, 4)
     assert.deepEqual(restored, initial)
   })
 })

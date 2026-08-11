@@ -1,6 +1,11 @@
-import { useState, type FocusEvent } from 'react'
+import { useEffect, useRef, useState, type FocusEvent } from 'react'
+import {
+  playFrequency,
+  startFrequencySequence,
+} from './audio'
 import { Fretboard } from './components/Fretboard'
 import { ScaleRelationshipInfo } from './components/ScaleRelationshipInfo'
+import { ScaleInfo } from './components/ScaleInfo'
 import { ViewControl } from './components/ViewControl'
 import { PatternModeControl, type PatternMode } from './components/PatternModeControl'
 import { isValidFretDraft, parseFretRangeDraft } from './fretRange'
@@ -31,6 +36,23 @@ import {
   supportsThreeNps,
   THREE_NPS_POSITIONS,
 } from './music/threeNps'
+import {
+  getPentatonicFretRange,
+  getPentatonicPattern,
+  PENTATONIC_POSITIONS,
+  supportsPentatonicPatterns,
+} from './music/pentatonicPatterns'
+import { getFretboardPitch, pitchToFrequency } from './music/pitch'
+import {
+  DEFAULT_SOUND_ENABLED,
+  getNotePlaybackHandler,
+  isPatternPlaybackAvailable,
+  PatternPlaybackSession,
+} from './soundState'
+import {
+  createPatternPlaybackRoute,
+  type PatternPlaybackStep,
+} from './patternPlayback'
 import './App.css'
 
 const INSTRUMENT_OPTIONS = [
@@ -62,10 +84,6 @@ const DISPLAY_MODES = ['notes', 'intervals', 'both'] as const
 const CHORD_TONE_MODES = ['off', 'triad', 'seventh'] as const
 const FULL_FRET_RANGE = { start: 0, end: 24 } as const
 
-function ordinal(degree: number): string {
-  return `${degree}${degree === 1 ? 'st' : degree === 2 ? 'nd' : degree === 3 ? 'rd' : 'th'}`
-}
-
 function App() {
   const [instrument, setInstrument] = useState<Instrument>('bass')
   const [controlState, setControlState] = useState(DEFAULT_APP_CONTROL_STATE)
@@ -75,12 +93,21 @@ function App() {
     focusedInterval,
     fretboardView,
     patternMode,
+    pentatonicPosition,
     root,
     scaleName,
     threeNpsPosition,
   } = controlState
   const [showOtherNotes, setShowOtherNotes] = useState(true)
   const [includeBlueNote, setIncludeBlueNote] = useState(false)
+  const [soundEnabled, setSoundEnabled] = useState(DEFAULT_SOUND_ENABLED)
+  const [isPatternPlaying, setIsPatternPlaying] = useState(false)
+  const [playingPatternStep, setPlayingPatternStep] = useState<PatternPlaybackStep | null>(null)
+  const isMountedRef = useRef(true)
+  const patternPlaybackSessionRef = useRef<PatternPlaybackSession | null>(null)
+  if (!patternPlaybackSessionRef.current) {
+    patternPlaybackSessionRef.current = new PatternPlaybackSession()
+  }
   const [positionStart, setPositionStart] = useState(5)
   const [positionEnd, setPositionEnd] = useState(9)
   const [positionStartDraft, setPositionStartDraft] = useState('5')
@@ -104,18 +131,46 @@ function App() {
   const modeRelationship = getModeRelationship(root, scaleName)
   const scaleRelationship = getScaleNavigationRelationship(root, scaleName)
   const threeNpsSupported = supportsThreeNps(scaleName)
+  const pentatonicSupported = supportsPentatonicPatterns(scaleName)
   const threeNpsActive = patternMode === '3nps' && threeNpsSupported
+  const pentatonicActive = patternMode === 'pentatonic' && pentatonicSupported
   const generatedThreeNpsPattern = threeNpsActive
     ? getThreeNpsPattern(root, scaleName, instrument, threeNpsPosition)
     : null
   const threeNpsPattern = generatedThreeNpsPattern
     ? shiftThreeNpsPattern(generatedThreeNpsPattern, threeNpsFretShift)
     : null
+  const pentatonicPattern = pentatonicActive
+    ? getPentatonicPattern(root, scaleName, instrument, pentatonicPosition)
+    : null
+  const activePatternNotes = threeNpsPattern?.notes
+    ?? pentatonicPattern?.notes
+    ?? null
   const fretRange = threeNpsPattern
     ? getThreeNpsFretRange(threeNpsPattern)
+    : pentatonicPattern
+      ? getPentatonicFretRange(pentatonicPattern)
     : fretboardView === 'full'
       ? FULL_FRET_RANGE
       : { start: positionStart, end: positionEnd }
+  const availablePatternPlaybackRoute = activePatternNotes
+    ? createPatternPlaybackRoute(instrument, activePatternNotes)
+    : null
+
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+      patternPlaybackSessionRef.current?.cancel()
+    }
+  }, [])
+
+  function cancelPatternPlayback() {
+    patternPlaybackSessionRef.current?.cancel()
+    patternPlaybackSessionRef.current = new PatternPlaybackSession()
+    setPlayingPatternStep(null)
+    setIsPatternPlaying(false)
+  }
 
   function updateControlState(patch: Partial<AppControlState>) {
     setControlState((state) => ({ ...state, ...patch }))
@@ -154,9 +209,11 @@ function App() {
 
       if (!equivalentPosition) return
 
+      cancelPatternPlayback()
       updateControlState({ threeNpsPosition: equivalentPosition.position })
       setThreeNpsFretShift(equivalentPosition.fretShift)
     } else {
+      cancelPatternPlayback()
       setThreeNpsFretShift(0)
     }
 
@@ -164,6 +221,31 @@ function App() {
       root: scaleRelationship.destinationRoot,
       scaleName: scaleRelationship.destinationScale,
     })
+  }
+
+  function handlePlayPattern() {
+    const route = availablePatternPlaybackRoute
+    if (!route?.length) return
+
+    const started = patternPlaybackSessionRef.current?.start(
+      soundEnabled,
+      (onStep) => startFrequencySequence(
+        route.map(({ frequency }) => frequency),
+        onStep,
+      ),
+      (index) => {
+        if (isMountedRef.current) {
+          setPlayingPatternStep(route[index])
+        }
+      },
+      () => {
+        if (isMountedRef.current) {
+          setPlayingPatternStep(null)
+          setIsPatternPlaying(false)
+        }
+      },
+    )
+    if (started) setIsPatternPlaying(true)
   }
 
   return (
@@ -178,7 +260,11 @@ function App() {
               type="button"
               className={instrument === option.value ? 'selected' : ''}
               aria-pressed={instrument === option.value}
-              onClick={() => setInstrument(option.value)}
+              onClick={() => {
+                if (option.value === instrument) return
+                cancelPatternPlayback()
+                setInstrument(option.value)
+              }}
             >
               <span
                 className="instrument-string-icon"
@@ -210,6 +296,7 @@ function App() {
           <select
             value={root}
             onChange={(event) => {
+              cancelPatternPlayback()
               updateControlState({ root: event.target.value as PitchClass })
               setThreeNpsFretShift(0)
             }}
@@ -227,6 +314,7 @@ function App() {
           <select
             value={scaleName}
             onChange={(event) => {
+              cancelPatternPlayback()
               updateControlState({ scaleName: event.target.value as ScaleName })
               setThreeNpsFretShift(0)
             }}
@@ -301,17 +389,24 @@ function App() {
         <ViewControl
           onChange={(fretboardView) => updateControlState({ fretboardView })}
           value={fretboardView}
-          visible={!threeNpsActive}
+          visible={!threeNpsActive && !pentatonicActive}
         />
         </div>
 
         <div className="pattern-controls">
           <PatternModeControl
-            activeMode={threeNpsActive ? '3nps' : 'all'}
+            activeMode={threeNpsActive
+              ? '3nps'
+              : pentatonicActive
+                ? 'pentatonic'
+                : 'all'}
             onChange={(nextPatternMode: PatternMode) => {
+              if (nextPatternMode === patternMode) return
+              cancelPatternPlayback()
               setControlState((state) => transitionPatternMode(state, nextPatternMode))
             }}
             threeNpsSupported={threeNpsSupported}
+            pentatonicSupported={pentatonicSupported}
           />
 
           {threeNpsActive && (
@@ -326,6 +421,8 @@ function App() {
                     aria-pressed={threeNpsPosition === position}
                     key={position}
                     onClick={() => {
+                      if (position === threeNpsPosition) return
+                      cancelPatternPlayback()
                       updateControlState({ threeNpsPosition: position })
                       setThreeNpsFretShift(0)
                     }}
@@ -337,7 +434,31 @@ function App() {
             </fieldset>
           )}
 
-          {!threeNpsSupported && (
+          {pentatonicActive && (
+            <fieldset className="three-nps-position-control">
+              <legend>Pentatonic Pattern</legend>
+              <div>
+                {PENTATONIC_POSITIONS.map((position) => (
+                  <button
+                    type="button"
+                    className={pentatonicPosition === position ? 'selected' : ''}
+                    aria-label={`Pentatonic pattern ${position}`}
+                    aria-pressed={pentatonicPosition === position}
+                    key={position}
+                    onClick={() => {
+                      if (position === pentatonicPosition) return
+                      cancelPatternPlayback()
+                      updateControlState({ pentatonicPosition: position })
+                    }}
+                  >
+                    {position}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          )}
+
+          {!threeNpsSupported && !pentatonicSupported && (
             <p className="pattern-availability">
               Classic 3NPS is available for seven-note scales and modes.
             </p>
@@ -361,6 +482,14 @@ function App() {
                   {root} {SCALE_LABELS[scaleName]} · 3NPS · Position {threeNpsPosition}
                 </strong>
                 <span>3 notes per string</span>
+              </output>
+            )}
+            {pentatonicPattern && (
+              <output className="three-nps-summary" aria-live="polite">
+                <strong>
+                  {root} {SCALE_LABELS[scaleName]} · Pattern {pentatonicPosition}
+                </strong>
+                <span>Canonical pentatonic position</span>
               </output>
             )}
             {chordToneMode === 'off' && focusedIntervalExists && (
@@ -474,33 +603,45 @@ function App() {
             />
             <span>Show other notes</span>
           </label>
+          <label className="toggle-control sound-toggle">
+            <input
+              type="checkbox"
+              checked={soundEnabled}
+              onChange={(event) => setSoundEnabled(event.target.checked)}
+            />
+            <span>Sound</span>
+          </label>
+          {activePatternNotes && (
+            <button
+              type="button"
+              className="play-pattern-button"
+              disabled={!isPatternPlaying && !isPatternPlaybackAvailable(
+                soundEnabled,
+                false,
+                availablePatternPlaybackRoute !== null
+                  && availablePatternPlaybackRoute.length > 0,
+              )}
+              onClick={isPatternPlaying
+                ? cancelPatternPlayback
+                : handlePlayPattern}
+            >
+              {isPatternPlaying ? 'Stop' : 'Play Pattern'}
+            </button>
+          )}
           </div>
         </div>
       </section>
 
-      {modeRelationship && (
-        <aside className="mode-info" aria-label="Mode relationship">
-          <div className="mode-info-heading">
-            <strong>
-              {root} {SCALE_LABELS[scaleName]}
-            </strong>
-            <span>
-              {ordinal(modeRelationship.degree)} mode of{' '}
-              {modeRelationship.parentRoot} Major
-            </span>
-          </div>
-          <p className="mode-formula" aria-label="Interval formula">
-            {SCALE_INTERVAL_LABELS[scaleName].join(' · ')}
-          </p>
-          <p>
-            Uses the same notes as {modeRelationship.parentRoot} Major, with{' '}
-            {root} as the tonal center.
-          </p>
-        </aside>
-      )}
+      <ScaleInfo
+        intervals={SCALE_INTERVAL_LABELS[scaleName]}
+        modeRelationship={modeRelationship}
+        root={root}
+        scaleLabel={SCALE_LABELS[scaleName]}
+        scaleTones={scaleTones}
+      />
 
       <Fretboard
-        activePatternNotes={threeNpsPattern?.notes ?? null}
+        activePatternNotes={activePatternNotes}
         blueNoteInterval={showBlueNoteOption && includeBlueNote ? blueNote?.interval : null}
         chordToneIntervals={chordToneIntervals}
         displayMode={displayMode}
@@ -508,6 +649,16 @@ function App() {
         focusedIntervalExists={chordToneMode === 'off' && focusedIntervalExists}
         fretRange={fretRange}
         instrument={instrument}
+        onPlayNote={getNotePlaybackHandler(
+          soundEnabled,
+          (stringIndex, fret) => {
+            const pitch = getFretboardPitch(instrument, stringIndex, fret)
+            void playFrequency(pitchToFrequency(pitch))
+          },
+        )}
+        playingCoordinate={playingPatternStep?.instrument === instrument
+          ? playingPatternStep.coordinate
+          : null}
         root={root}
         scaleTones={scaleTones}
         showOtherNotes={showOtherNotes}

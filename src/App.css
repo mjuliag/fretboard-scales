@@ -508,6 +508,38 @@ h1 {
   color: #f5d0fe;
 }
 
+.play-pattern-button {
+  min-width: 7.25rem;
+  min-height: 2.45rem;
+  padding: 0 0.7rem;
+  border: 1px solid #3b4659;
+  border-radius: 0.5rem;
+  color: #cbd5e1;
+  background: #1b2230;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.play-pattern-button:hover:not(:disabled) {
+  border-color: #a21caf;
+  color: #f5d0fe;
+}
+
+.play-pattern-button:focus-visible {
+  outline: 2px solid #22d3ee;
+  outline-offset: 2px;
+}
+
+.play-pattern-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .toggle-control input {
   position: relative;
   width: 2rem;
@@ -606,11 +638,16 @@ h1 {
 
 .scale-controls select {
   min-width: 6rem;
-  padding: 0.6rem 2rem 0.6rem 0.7rem;
+  padding: 0.6rem 2.5rem 0.6rem 0.7rem;
   border: 1px solid #3b4659;
   border-radius: 0.5rem;
+  appearance: none;
   color: #e2e8f0;
-  background: #1b2230;
+  background-color: #1b2230;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='m1 1 4 4 4-4' fill='none' stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.6875rem center;
+  background-size: 0.7rem 0.42rem;
   font: inherit;
   font-size: 0.9rem;
   font-weight: 600;
@@ -636,9 +673,13 @@ h1 {
 
 .mode-info-heading {
   display: grid;
-  grid-row: span 2;
   align-content: center;
   gap: 0.15rem;
+}
+
+.scale-info-details {
+  display: grid;
+  gap: 0.35rem;
 }
 
 .mode-info-heading strong {
@@ -658,6 +699,12 @@ h1 {
 
 .mode-info .mode-formula {
   color: #e2e8f0;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.mode-info .scale-note-list {
+  color: #f5d0fe;
   font-weight: 700;
   letter-spacing: 0.04em;
 }
@@ -803,6 +850,25 @@ h1 {
   font-weight: 700;
 }
 
+button.note {
+  margin: 0;
+  font-family: inherit;
+  line-height: normal;
+}
+
+.playable-note {
+  cursor: pointer;
+}
+
+.playable-note:hover {
+  border-color: #f5d0fe;
+}
+
+.playable-note:focus-visible {
+  outline: 2px solid #f5d0fe;
+  outline-offset: 2px;
+}
+
 .interval-label {
   font-size: 0.62rem;
   font-weight: 600;
@@ -812,6 +878,28 @@ h1 {
 
 .note.hidden-note {
   visibility: hidden;
+}
+
+.note.playing-note {
+  visibility: visible;
+  animation: playing-note-pulse 400ms ease-in-out infinite alternate;
+  box-shadow:
+    0 0 0 3px #fef08a,
+    0 0 1.15rem rgb(250 204 21 / 85%);
+}
+
+@keyframes playing-note-pulse {
+  from {
+    box-shadow:
+      0 0 0 1px #fef08a,
+      0 0 0.35rem rgb(250 204 21 / 55%);
+  }
+
+  to {
+    box-shadow:
+      0 0 0 3px #fef08a,
+      0 0 1.15rem rgb(250 204 21 / 85%);
+  }
 }
 
 .note.root-note,
@@ -1060,7 +1148,8 @@ h1 {
 
   .scale-controls select {
     min-width: 0;
-    padding: 0.5rem 1.6rem 0.5rem 0.55rem;
+    padding: 0.5rem 2rem 0.5rem 0.55rem;
+    background-position: right 0.6875rem center;
     font-size: 0.85rem;
   }
 
@@ -1159,8 +1248,10 @@ h1 {
     justify-content: space-between;
   }
 
-  .visibility-toggle {
-    width: 100%;
+  .visibility-toggle,
+  .sound-toggle {
+    flex: 1 1 calc(50% - 0.25rem);
+    width: auto;
     margin-left: 0;
   }
 
@@ -1189,6 +1280,12 @@ h1 {
   .secondary-controls:has(.learning-context .toggle-control) .toggle-control {
     order: 3;
     width: 100%;
+  }
+
+  .secondary-controls:has(.learning-context .toggle-control)
+    .fretboard-context-controls .toggle-control {
+    flex: 1 1 calc(50% - 0.25rem);
+    width: auto;
   }
 
   .fretboard-heading {
