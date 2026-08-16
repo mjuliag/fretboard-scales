@@ -16,9 +16,9 @@ function renderView(value: FretboardView, visible: boolean): string {
 describe('ViewControl', () => {
   it('is visible with the current selection in All Notes', () => {
     const markup = renderView('full', true)
-    assert.match(markup, /<legend>View<\/legend>/)
-    assert.match(markup, /aria-pressed="true" class="selected"[^>]*>Full fretboard/)
-    assert.match(markup, /aria-pressed="false" class=""[^>]*>Position/)
+    assert.match(markup, /<legend>Fretboard Range<\/legend>/)
+    assert.match(markup, /aria-pressed="true" class="selected"[^>]*>All Frets/)
+    assert.match(markup, /aria-pressed="false" class=""[^>]*>Custom Range/)
   })
 
   it('renders no active view or layout element in 3NPS', () => {

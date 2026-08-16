@@ -509,6 +509,7 @@ h1 {
 }
 
 .play-pattern-button {
+  width: 7.625rem;
   min-width: 7.25rem;
   min-height: 2.45rem;
   padding: 0 0.7rem;
@@ -984,48 +985,6 @@ button.note {
   background: #171c25;
 }
 
-@media (max-width: 64rem) {
-  .primary-controls {
-    grid-template-columns: repeat(3, max-content);
-  }
-
-  .secondary-controls {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .learning-context {
-    grid-column: 1 / -1;
-  }
-
-  .fretboard-context-controls {
-    flex-wrap: wrap;
-  }
-}
-
-@media (max-width: 48rem) {
-  .primary-controls {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .primary-controls select {
-    width: 100%;
-  }
-
-  .learning-context {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.65rem;
-  }
-
-  .secondary-controls {
-    align-items: start;
-  }
-
-  .pattern-controls {
-    flex-wrap: wrap;
-  }
-}
-
 @media (max-width: 36rem) {
   .app-shell {
     width: min(100% - 1rem, 72rem);
@@ -1071,12 +1030,6 @@ button.note {
     margin-top: 0.75rem;
   }
 
-  .pattern-controls {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0.5rem;
-  }
-
   .pattern-mode-control legend,
   .three-nps-position-control legend {
     margin-bottom: 0.2rem;
@@ -1102,29 +1055,6 @@ button.note {
   .pattern-availability {
     margin: 0;
     font-size: 0.7rem;
-  }
-
-  .primary-controls {
-    grid-template-columns: repeat(10, minmax(0, 1fr));
-    gap: 0.55rem 0.5rem;
-  }
-
-  .primary-controls > label:first-child {
-    grid-column: 1 / 4;
-  }
-
-  .primary-controls > label:nth-child(2) {
-    grid-column: 4 / -1;
-  }
-
-  .focus-control,
-  .display-mode-control {
-    grid-column: 1 / 6;
-  }
-
-  .chord-tone-control,
-  .view-control {
-    grid-column: 6 / -1;
   }
 
   .scale-controls label,
@@ -1168,27 +1098,8 @@ button.note {
     line-height: 1.1;
   }
 
-  .secondary-controls {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0.5rem;
-    min-height: 0;
-    padding: 0.5rem;
-  }
-
-  .learning-context {
-    gap: 0.45rem;
-  }
-
-  .learning-context:empty {
-    display: none;
-  }
-
   .chord-tone-summary {
     min-width: 0;
-    font-size: 0.7rem;
-  }
-
-  .three-nps-summary {
     font-size: 0.7rem;
   }
 
@@ -1215,77 +1126,6 @@ button.note {
 
   .scale-controls .toggle-control input {
     flex: 0 0 2rem;
-  }
-
-  .learning-context .toggle-control {
-    width: 100%;
-  }
-
-  .position-controls {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
-    gap: 0.5rem;
-    width: 100%;
-  }
-
-  .position-controls input {
-    width: 100%;
-    padding: 0.45rem 0.55rem;
-  }
-
-  .position-controls output {
-    align-self: end;
-    min-width: 0;
-    padding-bottom: 0.75rem;
-    white-space: nowrap;
-  }
-
-  .fretboard-context-controls {
-    align-items: center;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    justify-content: space-between;
-  }
-
-  .visibility-toggle,
-  .sound-toggle {
-    flex: 1 1 calc(50% - 0.25rem);
-    width: auto;
-    margin-left: 0;
-  }
-
-  .secondary-controls:has(.learning-context .toggle-control) {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .secondary-controls:has(.learning-context .toggle-control) .learning-context,
-  .secondary-controls:has(.learning-context .toggle-control) .fretboard-context-controls {
-    display: contents;
-  }
-
-  .secondary-controls:has(.learning-context .toggle-control) .learning-context output,
-  .secondary-controls:has(.learning-context .toggle-control) .position-controls {
-    grid-column: 1 / -1;
-  }
-
-  .secondary-controls:has(.learning-context .toggle-control) .learning-context output {
-    order: 1;
-  }
-
-  .secondary-controls:has(.learning-context .toggle-control) .position-controls {
-    order: 2;
-  }
-
-  .secondary-controls:has(.learning-context .toggle-control) .toggle-control {
-    order: 3;
-    width: 100%;
-  }
-
-  .secondary-controls:has(.learning-context .toggle-control)
-    .fretboard-context-controls .toggle-control {
-    flex: 1 1 calc(50% - 0.25rem);
-    width: auto;
   }
 
   .fretboard-heading {
@@ -1328,5 +1168,308 @@ button.note {
   .mode-info-heading span,
   .mode-info p {
     font-size: 0.72rem;
+  }
+}
+
+/* Explore information architecture */
+.app-header {
+  padding-bottom: 1rem;
+}
+
+.scale-controls {
+  gap: 1.35rem;
+}
+
+.context-section,
+.study-section,
+.display-analysis-section {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.section-label {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.context-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 1rem;
+}
+
+.tonal-context-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.tonal-context-controls > label:first-child select {
+  min-width: 5.5rem;
+}
+
+.tonal-context-controls > label:last-child select {
+  min-width: 11rem;
+}
+
+.study-section {
+  padding-top: 0.15rem;
+}
+
+.study-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.study-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+.all-notes-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+.pattern-mode-control legend {
+  color: #cbd5e1;
+}
+
+.pattern-mode-control button {
+  min-height: 2.9rem;
+  padding-right: 0.9rem;
+  padding-left: 0.9rem;
+  font-size: 0.85rem;
+}
+
+.position-controls {
+  padding-left: 0.25rem;
+}
+
+.fretboard-range-controls {
+  display: flex;
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.pattern-summary {
+  display: grid;
+  align-self: center;
+  gap: 0.08rem;
+  color: #94a3b8;
+  font-size: 0.7rem;
+  line-height: 1.2;
+}
+
+.pattern-summary strong {
+  color: #a5f3fc;
+}
+
+.audio-controls {
+  display: flex;
+  align-items: end;
+  gap: 0.6rem;
+  flex: 0 0 auto;
+}
+
+.display-analysis-section {
+  padding-top: 1rem;
+  border-top: 1px solid #232b39;
+}
+
+.display-analysis-controls {
+  display: flex;
+  align-items: end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.display-analysis-controls .focus-control {
+  margin-left: 0.5rem;
+  padding-left: 1.25rem;
+  border-left: 1px solid #2b3342;
+}
+
+.chord-tone-control {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.scale-controls .blue-note-toggle {
+  min-height: 2rem;
+  padding: 0 0.55rem;
+  font-size: 0.68rem;
+}
+
+.visibility-toggle {
+  margin-left: auto;
+  opacity: 0.86;
+}
+
+.analysis-feedback:empty {
+  display: none;
+}
+
+.analysis-feedback {
+  display: flex;
+  align-items: center;
+  min-height: 1.25rem;
+}
+
+.theory-section {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1.35rem;
+}
+
+.theory-section .mode-info {
+  margin-top: 0;
+}
+
+.theory-section .relative-scale-info {
+  margin-left: 0.2rem;
+  border-left-color: #475569;
+  background: rgb(27 34 48 / 42%);
+}
+
+.theory-section + .fretboard-section {
+  margin-top: 2rem;
+}
+
+@media (max-width: 64rem) {
+  .study-controls,
+  .display-analysis-controls {
+    flex-wrap: wrap;
+  }
+
+  .visibility-toggle {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 48rem) {
+  .scale-controls {
+    gap: 1rem;
+  }
+
+  .context-controls {
+    gap: 0.625rem;
+  }
+
+  .study-controls {
+    align-items: end;
+    gap: 0.55rem 0.75rem;
+  }
+
+  .study-navigation {
+    gap: 0.55rem 0.75rem;
+  }
+
+  .all-notes-controls {
+    gap: 0.5rem;
+  }
+
+  .fretboard-range-controls {
+    flex: 0 1 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 0.55rem 0.75rem;
+    min-width: 0;
+    max-width: 100%;
+    width: auto;
+  }
+
+  .fretboard-range-controls .view-control div {
+    width: auto;
+  }
+
+  .fretboard-range-controls .view-control button {
+    flex: 0 0 auto;
+    min-height: 2.75rem;
+    padding: 0.45rem 0.25rem;
+    font-size: 0.72rem;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+
+  .fretboard-range-controls .position-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 0.55rem 0.75rem;
+    flex: 0 1 auto;
+    min-width: 0;
+    width: auto;
+    padding-left: 0;
+  }
+
+  .fretboard-range-controls .position-controls input {
+    width: 4.5rem;
+  }
+
+  .fretboard-range-controls .position-controls output {
+    align-self: end;
+    padding-bottom: 0;
+    white-space: nowrap;
+  }
+
+  .fretboard-range-controls .position-controls label > span {
+    white-space: nowrap;
+  }
+
+  .display-analysis-controls {
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 0.65rem 1rem;
+  }
+
+  .display-mode-control {
+    flex: 0 1 auto;
+  }
+
+  .display-mode-control div {
+    width: 100%;
+  }
+
+  .display-mode-control button {
+    flex: 0 0 auto;
+  }
+
+  .focus-control,
+  .chord-tone-control,
+  .visibility-toggle {
+    flex: 0 1 auto;
+  }
+
+  .audio-controls > .sound-toggle,
+  .audio-controls > .play-pattern-button {
+    min-height: 2.75rem;
+  }
+
+  .display-analysis-controls .focus-control {
+    margin-left: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .display-analysis-section {
+    padding-top: 0.75rem;
   }
 }

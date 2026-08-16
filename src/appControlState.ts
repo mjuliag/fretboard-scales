@@ -37,3 +37,15 @@ export function transitionPatternMode(
 ): AppControlState {
   return { ...state, patternMode }
 }
+
+export function normalizePatternModeForScale(
+  state: AppControlState,
+  threeNpsSupported: boolean,
+  pentatonicSupported: boolean,
+): AppControlState {
+  const patternIsCompatible = state.patternMode === 'all'
+    || (state.patternMode === '3nps' && threeNpsSupported)
+    || (state.patternMode === 'pentatonic' && pentatonicSupported)
+
+  return patternIsCompatible ? state : { ...state, patternMode: 'all' }
+}

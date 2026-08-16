@@ -14,7 +14,7 @@ export function ViewControl({ onChange, value, visible }: ViewControlProps) {
   return createElement(
     'fieldset',
     { className: 'view-control' },
-    createElement('legend', null, 'View'),
+    createElement('legend', null, 'Fretboard Range'),
     createElement(
       'div',
       null,
@@ -26,7 +26,7 @@ export function ViewControl({ onChange, value, visible }: ViewControlProps) {
           onClick: () => onChange('full'),
           type: 'button',
         },
-        'Full fretboard',
+        'All Frets',
       ),
       createElement(
         'button',
@@ -36,7 +36,7 @@ export function ViewControl({ onChange, value, visible }: ViewControlProps) {
           onClick: () => onChange('position'),
           type: 'button',
         },
-        'Position',
+        'Custom Range',
       ),
     ),
   )

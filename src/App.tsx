@@ -4,13 +4,15 @@ import {
   startFrequencySequence,
 } from './audio'
 import { Fretboard } from './components/Fretboard'
+import { CanonicalPatternNavigation } from './components/CanonicalPatternNavigation'
+import { FretboardRangeControl } from './components/FretboardRangeControl'
 import { ScaleRelationshipInfo } from './components/ScaleRelationshipInfo'
 import { ScaleInfo } from './components/ScaleInfo'
-import { ViewControl } from './components/ViewControl'
 import { PatternModeControl, type PatternMode } from './components/PatternModeControl'
 import { isValidFretDraft, parseFretRangeDraft } from './fretRange'
 import {
   DEFAULT_APP_CONTROL_STATE,
+  normalizePatternModeForScale,
   transitionPatternMode,
   type AppControlState,
   type IntervalFocus,
@@ -248,250 +250,269 @@ function App() {
     if (started) setIsPatternPlaying(true)
   }
 
+  const audioControls = (
+    <div className="audio-controls">
+      <label className="toggle-control sound-toggle">
+        <input type="checkbox" checked={soundEnabled}
+          onChange={(event) => setSoundEnabled(event.target.checked)} />
+        <span>Sound</span>
+      </label>
+      {activePatternNotes && (
+        <button type="button" className="play-pattern-button"
+          disabled={!isPatternPlaying && !isPatternPlaybackAvailable(
+            soundEnabled, false, availablePatternPlaybackRoute !== null
+              && availablePatternPlaybackRoute.length > 0,
+          )}
+          onClick={isPatternPlaying ? cancelPatternPlayback : handlePlayPattern}>
+          {isPatternPlaying ? 'Stop' : 'Play Pattern'}
+        </button>
+      )}
+    </div>
+  )
+
   return (
     <main className="app-shell">
       <header className="app-header">
         <h1>Fretboard Scales</h1>
-
-        <div className="instrument-selector" aria-label="Select instrument">
-          {INSTRUMENT_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              className={instrument === option.value ? 'selected' : ''}
-              aria-pressed={instrument === option.value}
-              onClick={() => {
-                if (option.value === instrument) return
-                cancelPatternPlayback()
-                setInstrument(option.value)
-              }}
-            >
-              <span
-                className="instrument-string-icon"
-                data-string-count={option.stringCount}
-                aria-hidden="true"
-              >
-                {Array.from({ length: option.stringCount }, (_, index) => (
-                  <i key={index} />
-                ))}
-                <span className="instrument-fret instrument-fret-one" />
-                <span className="instrument-fret instrument-fret-two" />
-                <span className="instrument-note-marker instrument-note-one" />
-                <span className="instrument-note-marker instrument-note-two" />
-                <span className="instrument-note-marker instrument-note-three" />
-              </span>
-              <span className="instrument-label">
-                <strong>{option.label}</strong>
-                <small>{option.stringCount} strings</small>
-              </span>
-            </button>
-          ))}
-        </div>
       </header>
 
-      <section className="scale-controls" aria-label="Scale selection">
-        <div className="primary-controls">
-        <label>
-          <span>Root</span>
-          <select
-            value={root}
-            onChange={(event) => {
-              cancelPatternPlayback()
-              updateControlState({ root: event.target.value as PitchClass })
-              setThreeNpsFretShift(0)
-            }}
-          >
-            {PITCH_CLASSES.map((note) => (
-              <option key={note} value={note}>
-                {note}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label>
-          <span>Scale</span>
-          <select
-            value={scaleName}
-            onChange={(event) => {
-              cancelPatternPlayback()
-              updateControlState({ scaleName: event.target.value as ScaleName })
-              setThreeNpsFretShift(0)
-            }}
-          >
-            {SCALE_OPTIONS.map((name) => (
-              <option key={name} value={name}>
-                {SCALE_LABELS[name]}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <div className="focus-control">
-          <label>
-            <span>Focus interval</span>
-            <select
-              value={focusedInterval}
-              disabled={chordToneMode !== 'off'}
-              aria-describedby={chordToneMode !== 'off' ? 'focus-disabled-reason' : undefined}
-              onChange={(event) => {
-                updateControlState({ focusedInterval: event.target.value as IntervalFocus })
-              }}
-            >
-              <option value="all">All</option>
-              {focusedInterval !== 'all' && !focusedIntervalExists && (
-                <option value={focusedInterval}>{focusedInterval}</option>
-              )}
-              {focusOptions.map((interval) => (
-                <option key={interval} value={interval}>
-                  {interval}
-                </option>
+      <section className="scale-controls" aria-label="Explore controls">
+        <div className="context-section">
+          <p className="section-label">Explore</p>
+          <div className="context-controls">
+            <div className="instrument-selector" aria-label="Select instrument">
+              {INSTRUMENT_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={instrument === option.value ? 'selected' : ''}
+                  aria-pressed={instrument === option.value}
+                  onClick={() => {
+                    if (option.value === instrument) return
+                    cancelPatternPlayback()
+                    setInstrument(option.value)
+                  }}
+                >
+                  <span
+                    className="instrument-string-icon"
+                    data-string-count={option.stringCount}
+                    aria-hidden="true"
+                  >
+                    {Array.from({ length: option.stringCount }, (_, index) => (
+                      <i key={index} />
+                    ))}
+                    <span className="instrument-fret instrument-fret-one" />
+                    <span className="instrument-fret instrument-fret-two" />
+                    <span className="instrument-note-marker instrument-note-one" />
+                    <span className="instrument-note-marker instrument-note-two" />
+                    <span className="instrument-note-marker instrument-note-three" />
+                  </span>
+                  <span className="instrument-label">
+                    <strong>{option.label}</strong>
+                    <small>{option.stringCount} strings</small>
+                  </span>
+                </button>
               ))}
-            </select>
-          </label>
-        </div>
+            </div>
+            <div className="tonal-context-controls">
+              <label>
+                <span>Root</span>
+                <select
+                  value={root}
+                  onChange={(event) => {
+                    cancelPatternPlayback()
+                    updateControlState({ root: event.target.value as PitchClass })
+                    setThreeNpsFretShift(0)
+                  }}
+                >
+                  {PITCH_CLASSES.map((note) => (
+                    <option key={note} value={note}>
+                      {note}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-        <div className="chord-tone-control">
-          <label>
-            <span>Chord tones</span>
-            <select
-              value={chordToneMode}
-              onChange={(event) => {
-                updateControlState({ chordToneMode: event.target.value as ChordToneMode })
-              }}
-            >
-              {CHORD_TONE_MODES.map((mode) => (
-                <option key={mode} value={mode}>
-                  {mode[0].toUpperCase() + mode.slice(1)}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <fieldset className="display-mode-control">
-          <legend>Display</legend>
-          <div>
-            {DISPLAY_MODES.map((mode) => (
-              <button
-                type="button"
-                className={displayMode === mode ? 'selected' : ''}
-                aria-pressed={displayMode === mode}
-                key={mode}
-                onClick={() => updateControlState({ displayMode: mode })}
-              >
-                {mode}
-              </button>
-            ))}
+              <label>
+                <span>Scale</span>
+                <select
+                  value={scaleName}
+                  onChange={(event) => {
+                    const nextScaleName = event.target.value as ScaleName
+                    cancelPatternPlayback()
+                    setControlState((state) => normalizePatternModeForScale(
+                      { ...state, scaleName: nextScaleName },
+                      supportsThreeNps(nextScaleName),
+                      supportsPentatonicPatterns(nextScaleName),
+                    ))
+                    setThreeNpsFretShift(0)
+                  }}
+                >
+                  {SCALE_OPTIONS.map((name) => (
+                    <option key={name} value={name}>
+                      {SCALE_LABELS[name]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </div>
-        </fieldset>
-
-        <ViewControl
-          onChange={(fretboardView) => updateControlState({ fretboardView })}
-          value={fretboardView}
-          visible={!threeNpsActive && !pentatonicActive}
-        />
         </div>
 
-        <div className="pattern-controls">
-          <PatternModeControl
-            activeMode={threeNpsActive
-              ? '3nps'
-              : pentatonicActive
-                ? 'pentatonic'
-                : 'all'}
-            onChange={(nextPatternMode: PatternMode) => {
-              if (nextPatternMode === patternMode) return
-              cancelPatternPlayback()
-              setControlState((state) => transitionPatternMode(state, nextPatternMode))
-            }}
-            threeNpsSupported={threeNpsSupported}
-            pentatonicSupported={pentatonicSupported}
-          />
-
-          {threeNpsActive && (
-            <fieldset className="three-nps-position-control">
-              <legend>3NPS Position</legend>
-              <div>
-                {THREE_NPS_POSITIONS.map((position) => (
-                  <button
-                    type="button"
-                    className={threeNpsPosition === position ? 'selected' : ''}
-                    aria-label={`3NPS position ${position}`}
-                    aria-pressed={threeNpsPosition === position}
-                    key={position}
-                    onClick={() => {
-                      if (position === threeNpsPosition) return
-                      cancelPatternPlayback()
-                      updateControlState({ threeNpsPosition: position })
-                      setThreeNpsFretShift(0)
-                    }}
-                  >
-                    {position}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-          )}
-
-          {pentatonicActive && (
-            <fieldset className="three-nps-position-control">
-              <legend>Pentatonic Pattern</legend>
-              <div>
-                {PENTATONIC_POSITIONS.map((position) => (
-                  <button
-                    type="button"
-                    className={pentatonicPosition === position ? 'selected' : ''}
-                    aria-label={`Pentatonic pattern ${position}`}
-                    aria-pressed={pentatonicPosition === position}
-                    key={position}
-                    onClick={() => {
-                      if (position === pentatonicPosition) return
-                      cancelPatternPlayback()
-                      updateControlState({ pentatonicPosition: position })
-                    }}
-                  >
-                    {position}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-          )}
-
-          {!threeNpsSupported && !pentatonicSupported && (
-            <p className="pattern-availability">
-              Classic 3NPS is available for seven-note scales and modes.
-            </p>
-          )}
-        </div>
-
-        <div className="secondary-controls">
-          <div className="learning-context">
-            {scaleRelationship && (
-              <ScaleRelationshipInfo
-                destinationLabel={`${scaleRelationship.destinationRoot} ${SCALE_LABELS[scaleRelationship.destinationScale]}`}
-                modeRelationship={modeRelationship}
-                navigation={scaleRelationship}
-                onNavigate={handleScaleRelationshipSwitch}
-                sourceLabel={`${root} ${SCALE_LABELS[scaleName]}`}
+        <div className="study-section">
+          <p className="section-label">Study</p>
+          <div className="study-controls">
+            <div className="study-navigation">
+              <PatternModeControl
+                activeMode={threeNpsActive
+                  ? '3nps'
+                  : pentatonicActive
+                    ? 'pentatonic'
+                    : 'all'}
+                onChange={(nextPatternMode: PatternMode) => {
+                  if (nextPatternMode === patternMode) return
+                  cancelPatternPlayback()
+                  setControlState((state) => transitionPatternMode(state, nextPatternMode))
+                }}
+                threeNpsSupported={threeNpsSupported}
+                pentatonicSupported={pentatonicSupported}
               />
+
+              {!threeNpsActive && !pentatonicActive && (
+                <div className="all-notes-controls">
+                <FretboardRangeControl
+                  end={positionEnd}
+                  endDraft={positionEndDraft}
+                  onBlur={handlePositionControlsBlur}
+                  onCommit={commitPositionRange}
+                  onDraftChange={(boundary, value) => {
+                    if (!isValidFretDraft(value)) return
+                    if (boundary === 'start') setPositionStartDraft(value)
+                    else setPositionEndDraft(value)
+                  }}
+                  onViewChange={(fretboardView) => updateControlState({ fretboardView })}
+                  start={positionStart}
+                  startDraft={positionStartDraft}
+                  value={fretboardView}
+                />
+                  {audioControls}
+                </div>
+              )}
+
+            {threeNpsActive && (
+                <CanonicalPatternNavigation
+                  mode="3nps"
+                  positions={THREE_NPS_POSITIONS}
+                  selectedPosition={threeNpsPosition}
+                  onChange={(position) => {
+                    if (position === threeNpsPosition) return
+                    cancelPatternPlayback()
+                    updateControlState({ threeNpsPosition: position as typeof threeNpsPosition })
+                    setThreeNpsFretShift(0)
+                  }}
+                />
             )}
+
+            {pentatonicActive && (
+                <CanonicalPatternNavigation
+                  mode="pentatonic"
+                  positions={PENTATONIC_POSITIONS}
+                  selectedPosition={pentatonicPosition}
+                  onChange={(position) => {
+                    if (position === pentatonicPosition) return
+                    cancelPatternPlayback()
+                    updateControlState({ pentatonicPosition: position as typeof pentatonicPosition })
+                  }}
+                />
+            )}
+
             {threeNpsPattern && (
-              <output className="three-nps-summary" aria-live="polite">
-                <strong>
-                  {root} {SCALE_LABELS[scaleName]} · 3NPS · Position {threeNpsPosition}
-                </strong>
-                <span>3 notes per string</span>
-              </output>
+                <output className="pattern-summary" aria-live="polite">
+                  <strong>{root} {SCALE_LABELS[scaleName]} · 3NPS · Position {threeNpsPosition}</strong>
+                  <span>3 notes per string</span>
+                </output>
             )}
             {pentatonicPattern && (
-              <output className="three-nps-summary" aria-live="polite">
-                <strong>
-                  {root} {SCALE_LABELS[scaleName]} · Pattern {pentatonicPosition}
-                </strong>
-                <span>Canonical pentatonic position</span>
-              </output>
+                <output className="pattern-summary" aria-live="polite">
+                  <strong>{root} {SCALE_LABELS[scaleName]} · Shape {pentatonicPosition}</strong>
+                  <span>Canonical pentatonic position</span>
+                </output>
             )}
+            </div>
+            {(threeNpsActive || pentatonicActive) && audioControls}
+          </div>
+        </div>
+
+        <div className="display-analysis-section">
+          <p className="section-label">Display &amp; Analysis</p>
+          <div className="display-analysis-controls">
+            <fieldset className="display-mode-control">
+              <legend>Display</legend>
+              <div>
+                {DISPLAY_MODES.map((mode) => (
+                  <button type="button" className={displayMode === mode ? 'selected' : ''}
+                    aria-pressed={displayMode === mode} key={mode}
+                    onClick={() => updateControlState({ displayMode: mode })}>{mode}</button>
+                ))}
+              </div>
+            </fieldset>
+
+            <div className="focus-control">
+              <label>
+                <span>Highlight Degree</span>
+                <select
+                  value={focusedInterval}
+                  disabled={chordToneMode !== 'off'}
+                  aria-describedby={chordToneMode !== 'off' ? 'focus-disabled-reason' : undefined}
+                  onChange={(event) => {
+                    updateControlState({ focusedInterval: event.target.value as IntervalFocus })
+                  }}
+                >
+                  <option value="all">All</option>
+                  {focusedInterval !== 'all' && !focusedIntervalExists && (
+                    <option value={focusedInterval}>{focusedInterval}</option>
+                  )}
+                  {focusOptions.map((interval) => (
+                    <option key={interval} value={interval}>
+                      {interval}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="chord-tone-control">
+              <label>
+                <span>Highlight Chord Tones</span>
+                <select
+                  value={chordToneMode}
+                  onChange={(event) => {
+                    updateControlState({ chordToneMode: event.target.value as ChordToneMode })
+                  }}
+                >
+                  {CHORD_TONE_MODES.map((mode) => (
+                    <option key={mode} value={mode}>
+                      {mode[0].toUpperCase() + mode.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {showBlueNoteOption && (
+                <label className="toggle-control blue-note-toggle">
+                  <input type="checkbox" checked={includeBlueNote}
+                    onChange={(event) => setIncludeBlueNote(event.target.checked)} />
+                  <span>Include blue note</span>
+                </label>
+              )}
+            </div>
+
+            <label className="toggle-control visibility-toggle">
+              <input type="checkbox" checked={showOtherNotes}
+                onChange={(event) => setShowOtherNotes(event.target.checked)} />
+              <span>Show Non-Scale Notes</span>
+            </label>
+          </div>
+          <div className="analysis-feedback">
             {chordToneMode === 'off' && focusedIntervalExists && (
               <output className="focus-status" aria-live="polite">
                 Focusing {focusedInterval}
@@ -501,9 +522,7 @@ function App() {
               && focusedInterval !== 'all'
               && !focusedIntervalExists && (
               <output className="missing-focus-message" aria-live="polite">
-                <span>
-                  {focusedInterval} is not part of {root} {SCALE_LABELS[scaleName]}
-                </span>
+                <span>{focusedInterval} is not part of {root} {SCALE_LABELS[scaleName]}</span>
                 <span>Scale intervals: {focusOptions.join(' · ')}</span>
               </output>
             )}
@@ -531,9 +550,7 @@ function App() {
                 <span className="active-state-badge" id="focus-disabled-reason">
                   Chord tones active
                 </span>
-                <strong>
-                  Cannot build a complete {chordToneMode} chord from this scale.
-                </strong>
+                <strong>Cannot build a complete {chordToneMode} chord from this scale.</strong>
                 {chordToneResult.missingDegrees.length > 0 && (
                   <span>Missing degrees: {chordToneResult.missingDegrees.join(', ')}</span>
                 )}
@@ -542,103 +559,29 @@ function App() {
                 )}
               </output>
             )}
-            {showBlueNoteOption && (
-              <label className="toggle-control">
-                <input
-                  type="checkbox"
-                  checked={includeBlueNote}
-                  onChange={(event) => setIncludeBlueNote(event.target.checked)}
-                />
-                <span>Include blue note</span>
-              </label>
-            )}
-          </div>
-
-          <div className="fretboard-context-controls">
-          {fretboardView === 'position' && (
-            <div className="position-controls" onBlur={handlePositionControlsBlur}>
-            <label>
-              <span>Start fret</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={positionStartDraft}
-                onChange={(event) => {
-                  if (isValidFretDraft(event.target.value)) {
-                    setPositionStartDraft(event.target.value)
-                  }
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') commitPositionRange()
-                }}
-              />
-            </label>
-            <label>
-              <span>End fret</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={positionEndDraft}
-                onChange={(event) => {
-                  if (isValidFretDraft(event.target.value)) {
-                    setPositionEndDraft(event.target.value)
-                  }
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') commitPositionRange()
-                }}
-              />
-            </label>
-            <output aria-live="polite">Frets {positionStart}–{positionEnd}</output>
-            </div>
-          )}
-
-          <label className="toggle-control visibility-toggle">
-            <input
-              type="checkbox"
-              checked={showOtherNotes}
-              onChange={(event) => setShowOtherNotes(event.target.checked)}
-            />
-            <span>Show other notes</span>
-          </label>
-          <label className="toggle-control sound-toggle">
-            <input
-              type="checkbox"
-              checked={soundEnabled}
-              onChange={(event) => setSoundEnabled(event.target.checked)}
-            />
-            <span>Sound</span>
-          </label>
-          {activePatternNotes && (
-            <button
-              type="button"
-              className="play-pattern-button"
-              disabled={!isPatternPlaying && !isPatternPlaybackAvailable(
-                soundEnabled,
-                false,
-                availablePatternPlaybackRoute !== null
-                  && availablePatternPlaybackRoute.length > 0,
-              )}
-              onClick={isPatternPlaying
-                ? cancelPatternPlayback
-                : handlePlayPattern}
-            >
-              {isPatternPlaying ? 'Stop' : 'Play Pattern'}
-            </button>
-          )}
           </div>
         </div>
+
       </section>
 
-      <ScaleInfo
-        intervals={SCALE_INTERVAL_LABELS[scaleName]}
-        modeRelationship={modeRelationship}
-        root={root}
-        scaleLabel={SCALE_LABELS[scaleName]}
-        scaleTones={scaleTones}
-      />
+      <section className="theory-section" aria-label="Contextual theory">
+        <ScaleInfo
+          intervals={SCALE_INTERVAL_LABELS[scaleName]}
+          modeRelationship={modeRelationship}
+          root={root}
+          scaleLabel={SCALE_LABELS[scaleName]}
+          scaleTones={scaleTones}
+        />
+        {scaleRelationship && (
+          <ScaleRelationshipInfo
+            destinationLabel={`${scaleRelationship.destinationRoot} ${SCALE_LABELS[scaleRelationship.destinationScale]}`}
+            modeRelationship={modeRelationship}
+            navigation={scaleRelationship}
+            onNavigate={handleScaleRelationshipSwitch}
+            sourceLabel={`${root} ${SCALE_LABELS[scaleName]}`}
+          />
+        )}
+      </section>
 
       <Fretboard
         activePatternNotes={activePatternNotes}
