@@ -6,17 +6,32 @@ import {
   type IntervalLabel,
   type PitchClass,
   type ScaleTone,
-} from '../music'
-import { getFretboardPitch } from '../music/pitch'
+} from '../music/index.ts'
+import { getFretboardPitch } from '../music/pitch.ts'
 import {
   isFretboardCoordinate,
   type FretboardCoordinate,
-} from '../music/fretboardPosition'
+} from '../music/fretboardPosition.ts'
+import {
+  formatIntervalLabel,
+  type PracticePosition,
+} from '../practiceMode.ts'
 
 const SINGLE_MARKER_FRETS = new Set([3, 5, 7, 9, 15, 17, 19, 21])
 const DOUBLE_MARKER_FRETS = new Set([12, 24])
 
 export type DisplayMode = 'notes' | 'intervals' | 'both'
+
+export type FretboardPresentation =
+  | { mode: 'explore' }
+  | {
+      correctCoordinates: readonly FretboardCoordinate[]
+      mode: 'practice'
+      onSelect: (coordinate: FretboardCoordinate) => void
+      phase: 'unanswered' | 'answered'
+      positions: readonly PracticePosition[]
+      selectedCoordinate: FretboardCoordinate | null
+    }
 
 type FretboardProps = {
   activePatternNotes: readonly { fret: number; stringIndex: number }[] | null
@@ -30,8 +45,9 @@ type FretboardProps = {
     end: number
   }
   instrument: Instrument
-  onPlayNote?: (stringIndex: number, fret: number) => void
+  onPositionSelect?: (coordinate: FretboardCoordinate) => void
   playingCoordinate: FretboardCoordinate | null
+  presentation?: FretboardPresentation
   root: PitchClass
   scaleTones: readonly ScaleTone[]
   showOtherNotes: boolean
@@ -62,8 +78,9 @@ export function Fretboard({
   focusedIntervalExists,
   fretRange,
   instrument,
-  onPlayNote,
+  onPositionSelect,
   playingCoordinate,
+  presentation = { mode: 'explore' },
   root,
   scaleTones,
   showOtherNotes,
@@ -85,11 +102,23 @@ export function Fretboard({
       ({ fret, stringIndex }) => `${stringIndex}:${fret}`,
     ))
     : null
+  const practicePositions = presentation.mode === 'practice'
+    ? new Map(presentation.positions.map((position) => [
+        `${position.coordinate.stringIndex}:${position.coordinate.fret}`,
+        position,
+      ]))
+    : null
+  const practiceCorrectCoordinates = presentation.mode === 'practice'
+    ? new Set(presentation.correctCoordinates.map(
+        ({ stringIndex, fret }) => `${stringIndex}:${fret}`,
+      ))
+    : null
 
   return (
     <section className="fretboard-section" aria-labelledby="fretboard-title">
       <div className="fretboard-heading">
         <h2 id="fretboard-title">{instrument} fretboard</h2>
+        {presentation.mode === 'explore' && (
         <div className="note-legend" aria-label="Note colors">
           <span><i className="legend-swatch root-note" />Root</span>
           <span><i className="legend-swatch scale-note" />Scale note</span>
@@ -103,6 +132,7 @@ export function Fretboard({
             <span><i className="legend-swatch other-note" />Other note</span>
           )}
         </div>
+        )}
       </div>
 
       <div className="fretboard-scroll" tabIndex={0}>
@@ -132,6 +162,18 @@ export function Fretboard({
               return (
                 <tr key={`${openString}-${stringIndex}`} style={rowStyle}>
                   {frets.map((fret) => {
+                    const coordinate = { stringIndex: tuningStringIndex, fret }
+                    const coordinateKey = `${tuningStringIndex}:${fret}`
+                    const practicePosition = practicePositions?.get(coordinateKey)
+                    if (presentation.mode === 'practice' && !practicePosition) {
+                      return (
+                        <td
+                          className={fret === 0 ? 'open-fret' : undefined}
+                          key={fret}
+                        />
+                      )
+                    }
+
                     const note = getNoteAtFret(openString, fret)
                     const isActivePatternCoordinate = !activePatternCoordinates
                       || activePatternCoordinates.has(`${tuningStringIndex}:${fret}`)
@@ -167,7 +209,7 @@ export function Fretboard({
                     const blueNoteClass = interval === blueNoteInterval
                       ? ' blue-note'
                       : ''
-                    const physicalPitch = onPlayNote
+                    const physicalPitch = onPositionSelect
                       ? getFretboardPitch(instrument, tuningStringIndex, fret)
                       : null
                     const playingClass = isFretboardCoordinate(
@@ -178,18 +220,68 @@ export function Fretboard({
                       ? ' playing-note'
                       : ''
 
+                    if (presentation.mode === 'practice' && practicePosition) {
+                      const isAnswered = presentation.phase === 'answered'
+                      const isSelected = isFretboardCoordinate(
+                        presentation.selectedCoordinate,
+                        tuningStringIndex,
+                        fret,
+                      )
+                      const isCorrect = Boolean(
+                        practiceCorrectCoordinates?.has(coordinateKey),
+                      )
+                      const reveal = isAnswered && (isSelected || isCorrect)
+                      const resultClass = !isAnswered
+                        ? ''
+                        : isCorrect
+                          ? ' practice-correct'
+                          : isSelected
+                            ? ' practice-incorrect'
+                            : ''
+                      const selectedClass = isSelected
+                        ? ' practice-selected'
+                        : ''
+                      const practiceStringNumber = tuning.length - tuningStringIndex
+                      const accessibleLabel = reveal
+                        ? `${practicePosition.note}, ${formatIntervalLabel(practicePosition.interval)}, string ${practiceStringNumber}, fret ${fret}`
+                        : `Select string ${practiceStringNumber}, fret ${fret}`
+
+                      return (
+                        <td
+                          className={fret === 0 ? 'open-fret' : undefined}
+                          key={fret}
+                        >
+                          <button
+                            type="button"
+                            className={`note playable-note practice-candidate${selectedClass}${resultClass}`}
+                            aria-label={accessibleLabel}
+                            onClick={() => presentation.onSelect(coordinate)}
+                          >
+                            {reveal && (
+                              <>
+                                <span className="note-name">{practicePosition.note}</span>
+                                <span className="interval-label">
+                                  {formatIntervalLabel(practicePosition.interval)}
+                                </span>
+                              </>
+                            )}
+                          </button>
+                        </td>
+                      )
+                    }
+
                     return (
                       <td
                         className={fret === 0 ? 'open-fret' : undefined}
                         key={fret}
                       >
-                        {onPlayNote && physicalPitch
+                        {onPositionSelect && physicalPitch
                           ? (
                               <button
                                 type="button"
                                 className={`note playable-note ${noteType}${focusClass}${chordToneClass}${blueNoteClass}${playingClass}${isHidden ? ' hidden-note' : ''}`}
                                 aria-label={`${physicalPitch.pitchClass}${physicalPitch.octave}, string ${tuningStringIndex + 1}, fret ${fret}`}
-                                onClick={() => onPlayNote(tuningStringIndex, fret)}
+                                onClick={() => onPositionSelect(coordinate)}
                               >
                                 {showNoteName && <span className="note-name">{note}</span>}
                                 {showInterval && (

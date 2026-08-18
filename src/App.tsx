@@ -3,11 +3,15 @@ import {
   playFrequency,
   startFrequencySequence,
 } from './audio'
-import { Fretboard } from './components/Fretboard'
+import { Fretboard } from './components/Fretboard.tsx'
 import { CanonicalPatternNavigation } from './components/CanonicalPatternNavigation'
 import { FretboardRangeControl } from './components/FretboardRangeControl'
 import { ScaleRelationshipInfo } from './components/ScaleRelationshipInfo'
 import { ScaleInfo } from './components/ScaleInfo'
+import {
+  PracticeView,
+  type PracticeScopeSummary,
+} from './components/PracticeView.tsx'
 import { PatternModeControl, type PatternMode } from './components/PatternModeControl'
 import { isValidFretDraft, parseFretRangeDraft } from './fretRange'
 import {
@@ -45,9 +49,9 @@ import {
   supportsPentatonicPatterns,
 } from './music/pentatonicPatterns'
 import { getFretboardPitch, pitchToFrequency } from './music/pitch'
+import type { FretboardCoordinate } from './music/fretboardPosition'
 import {
   DEFAULT_SOUND_ENABLED,
-  getNotePlaybackHandler,
   isPatternPlaybackAvailable,
   PatternPlaybackSession,
 } from './soundState'
@@ -55,6 +59,14 @@ import {
   createPatternPlaybackRoute,
   type PatternPlaybackStep,
 } from './patternPlayback'
+import {
+  adaptPatternPracticePositions,
+  choosePracticeTarget,
+  enumerateAllNotesPracticePositions,
+  getPracticeTargetCandidates,
+  type PracticeTarget,
+  type PracticeTargetType,
+} from './practiceMode'
 import './App.css'
 
 const INSTRUMENT_OPTIONS = [
@@ -87,6 +99,7 @@ const CHORD_TONE_MODES = ['off', 'triad', 'seventh'] as const
 const FULL_FRET_RANGE = { start: 0, end: 24 } as const
 
 function App() {
+  const [topLevelView, setTopLevelView] = useState<'explore' | 'practice'>('explore')
   const [instrument, setInstrument] = useState<Instrument>('bass')
   const [controlState, setControlState] = useState(DEFAULT_APP_CONTROL_STATE)
   const {
@@ -115,6 +128,14 @@ function App() {
   const [positionStartDraft, setPositionStartDraft] = useState('5')
   const [positionEndDraft, setPositionEndDraft] = useState('9')
   const [threeNpsFretShift, setThreeNpsFretShift] = useState<-12 | 0 | 12>(0)
+  const [practiceTargetType, setPracticeTargetType] = useState<PracticeTargetType>('note')
+  const [practiceQuestion, setPracticeQuestion] = useState<{
+    target: PracticeTarget
+    selection: FretboardCoordinate | null
+  } | null>(null)
+  const lastPracticeTargetByTypeRef = useRef<Partial<
+    Record<PracticeTargetType, PracticeTarget>
+  >>({})
   const scaleTones = getScaleTones(root, scaleName)
   const chordToneResult = chordToneMode === 'off'
     ? null
@@ -158,6 +179,19 @@ function App() {
   const availablePatternPlaybackRoute = activePatternNotes
     ? createPatternPlaybackRoute(instrument, activePatternNotes)
     : null
+  const practicePositions = activePatternNotes
+    ? adaptPatternPracticePositions(activePatternNotes)
+    : enumerateAllNotesPracticePositions(instrument, fretRange, scaleTones)
+  const practiceScope: PracticeScopeSummary = threeNpsActive
+    ? {
+        endFret: fretRange.end,
+        mode: '3nps',
+        position: threeNpsPosition,
+        startFret: fretRange.start,
+      }
+    : pentatonicActive
+      ? { mode: 'pentatonic', position: pentatonicPosition }
+      : { mode: 'all', fullRange: fretboardView === 'full' }
 
   useEffect(() => {
     isMountedRef.current = true
@@ -172,6 +206,54 @@ function App() {
     patternPlaybackSessionRef.current = new PatternPlaybackSession()
     setPlayingPatternStep(null)
     setIsPatternPlaying(false)
+  }
+
+  function createPracticeQuestion(type: PracticeTargetType) {
+    const candidates = getPracticeTargetCandidates(
+      practicePositions,
+      scaleTones,
+      type,
+    )
+    const target = choosePracticeTarget(
+      candidates,
+      lastPracticeTargetByTypeRef.current[type] ?? null,
+    )
+    if (!target) return null
+
+    lastPracticeTargetByTypeRef.current[type] = target
+    return { target, selection: null }
+  }
+
+  function handleTopLevelViewChange(view: 'explore' | 'practice') {
+    if (view === topLevelView) return
+
+    if (view === 'practice') {
+      cancelPatternPlayback()
+      setPracticeQuestion(createPracticeQuestion(practiceTargetType))
+    } else {
+      setPracticeQuestion(null)
+    }
+    setTopLevelView(view)
+  }
+
+  function handlePracticeTargetTypeChange(type: PracticeTargetType) {
+    if (type === practiceTargetType) return
+    setPracticeTargetType(type)
+    setPracticeQuestion(createPracticeQuestion(type))
+  }
+
+  function handlePracticePositionSelect(coordinate: FretboardCoordinate) {
+    if (!practiceQuestion || practiceQuestion.selection) return
+
+    setPracticeQuestion({ ...practiceQuestion, selection: coordinate })
+    if (soundEnabled) {
+      const pitch = getFretboardPitch(
+        instrument,
+        coordinate.stringIndex,
+        coordinate.fret,
+      )
+      void playFrequency(pitchToFrequency(pitch))
+    }
   }
 
   function updateControlState(patch: Partial<AppControlState>) {
@@ -276,6 +358,22 @@ function App() {
         <h1>Fretboard Scales</h1>
       </header>
 
+      <nav className="top-level-navigation" aria-label="App view">
+        {(['explore', 'practice'] as const).map((view) => (
+          <button
+            type="button"
+            className={topLevelView === view ? 'selected' : ''}
+            aria-pressed={topLevelView === view}
+            key={view}
+            onClick={() => handleTopLevelViewChange(view)}
+          >
+            {view === 'explore' ? 'Explore' : 'Practice'}
+          </button>
+        ))}
+      </nav>
+
+      {topLevelView === 'explore' ? (
+      <>
       <section className="scale-controls" aria-label="Explore controls">
         <div className="context-section">
           <p className="section-label">Explore</p>
@@ -592,13 +690,12 @@ function App() {
         focusedIntervalExists={chordToneMode === 'off' && focusedIntervalExists}
         fretRange={fretRange}
         instrument={instrument}
-        onPlayNote={getNotePlaybackHandler(
-          soundEnabled,
-          (stringIndex, fret) => {
+        onPositionSelect={soundEnabled
+          ? ({ stringIndex, fret }) => {
             const pitch = getFretboardPitch(instrument, stringIndex, fret)
             void playFrequency(pitchToFrequency(pitch))
-          },
-        )}
+          }
+          : undefined}
         playingCoordinate={playingPatternStep?.instrument === instrument
           ? playingPatternStep.coordinate
           : null}
@@ -606,6 +703,25 @@ function App() {
         scaleTones={scaleTones}
         showOtherNotes={showOtherNotes}
       />
+      </>
+      ) : (
+        <PracticeView
+          fretRange={fretRange}
+          instrument={instrument}
+          onNext={() => setPracticeQuestion(createPracticeQuestion(practiceTargetType))}
+          onSelect={handlePracticePositionSelect}
+          onSoundChange={setSoundEnabled}
+          onTargetTypeChange={handlePracticeTargetTypeChange}
+          positions={practicePositions}
+          question={practiceQuestion}
+          root={root}
+          scaleLabel={SCALE_LABELS[scaleName]}
+          scaleTones={scaleTones}
+          scope={practiceScope}
+          soundEnabled={soundEnabled}
+          targetType={practiceTargetType}
+        />
+      )}
     </main>
   )
 }

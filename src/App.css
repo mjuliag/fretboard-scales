@@ -1473,3 +1473,318 @@ button.note {
     padding-top: 0.75rem;
   }
 }
+
+/* Top-level views and Practice */
+.top-level-navigation {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(8rem, 1fr));
+  width: min(100%, 24rem);
+  margin-top: 1rem;
+  padding: 0.25rem;
+  border: 1px solid #303949;
+  border-radius: 0.7rem;
+  background: #151c28;
+}
+
+.top-level-navigation button {
+  min-height: 2.75rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  color: #94a3b8;
+  background: transparent;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0.025em;
+  cursor: pointer;
+}
+
+.top-level-navigation button:hover {
+  color: #f8fafc;
+}
+
+.top-level-navigation button.selected {
+  border-color: #22d3ee;
+  color: #ecfeff;
+  background: #164e63;
+  box-shadow: 0 0 0.8rem rgb(34 211 238 / 14%);
+}
+
+.top-level-navigation button:focus-visible {
+  outline: 2px solid #22d3ee;
+  outline-offset: 2px;
+}
+
+.practice-view {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+  margin-top: 1.5rem;
+}
+
+.practice-view > * {
+  min-width: 0;
+}
+
+.practice-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #2b3342;
+  border-radius: 0.65rem;
+  background: rgb(27 34 48 / 48%);
+}
+
+.practice-context-copy {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.practice-context-copy strong {
+  color: #f5d0fe;
+  font-size: 0.95rem;
+}
+
+.practice-context-copy span {
+  color: #a5f3fc;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.practice-sound-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0 0.7rem;
+  border: 1px solid #3b4659;
+  border-radius: 0.5rem;
+  color: #cbd5e1;
+  background: #1b2230;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.practice-exercise {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  align-items: end;
+  gap: 0.75rem 1.5rem;
+}
+
+.practice-exercise h2 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.practice-type-control {
+  grid-row: span 2;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.practice-type-control legend {
+  margin-bottom: 0.35rem;
+  color: #94a3b8;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.practice-type-control div {
+  display: flex;
+}
+
+.practice-type-control button {
+  min-height: 2.75rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid #3b4659;
+  color: #94a3b8;
+  background: #1b2230;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.practice-type-control button:first-child {
+  border-radius: 0.5rem 0 0 0.5rem;
+}
+
+.practice-type-control button:last-child {
+  margin-left: -1px;
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+
+.practice-type-control button.selected {
+  position: relative;
+  border-color: #22d3ee;
+  color: #ecfeff;
+  background: #164e63;
+}
+
+.practice-type-control button:focus-visible {
+  z-index: 1;
+  outline: 2px solid #22d3ee;
+  outline-offset: 2px;
+}
+
+.practice-prompt,
+.practice-empty-state {
+  margin: 0;
+}
+
+.practice-prompt {
+  color: #f8fafc;
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.practice-empty-state {
+  color: #f0abfc;
+  font-weight: 700;
+}
+
+.practice-view .fretboard-section {
+  margin-top: 0;
+}
+
+.note.practice-candidate {
+  border-color: #64748b;
+  color: transparent;
+  background: #273142;
+  box-shadow: none;
+}
+
+.note.practice-candidate:hover {
+  border-color: #a5f3fc;
+  background: #334155;
+}
+
+.note.practice-candidate.practice-correct {
+  border-color: #86efac;
+  color: #f0fdf4;
+  background: #15803d;
+  box-shadow: 0 0 0 2px #22c55e, 0 0 0.85rem rgb(34 197 94 / 42%);
+}
+
+.note.practice-candidate.practice-incorrect {
+  border-color: #fca5a5;
+  color: #fff1f2;
+  background: #be123c;
+  box-shadow: 0 0 0 2px #fb7185, 0 0 0.85rem rgb(244 63 94 / 42%);
+}
+
+.note.practice-candidate.practice-selected {
+  transform: scale(1.08);
+}
+
+.practice-review {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #2b3342;
+  border-radius: 0.65rem;
+  background: rgb(27 34 48 / 62%);
+}
+
+.practice-feedback {
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.practice-feedback.correct {
+  color: #bbf7d0;
+}
+
+.practice-feedback.incorrect {
+  color: #fecdd3;
+}
+
+.practice-next-button {
+  min-width: 6rem;
+  min-height: 2.75rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid #22d3ee;
+  border-radius: 0.5rem;
+  color: #ecfeff;
+  background: #164e63;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.practice-next-button:hover {
+  background: #155e75;
+}
+
+.practice-next-button:focus-visible {
+  outline: 2px solid #f5d0fe;
+  outline-offset: 2px;
+}
+
+@media (max-width: 36rem) {
+  .top-level-navigation {
+    width: 100%;
+    margin-top: 0.75rem;
+  }
+
+  .practice-view {
+    gap: 0.85rem;
+    margin-top: 0.9rem;
+  }
+
+  .practice-context {
+    align-items: stretch;
+    padding: 0.7rem;
+  }
+
+  .practice-sound-toggle {
+    flex: 0 0 auto;
+  }
+
+  .practice-exercise {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .practice-type-control {
+    grid-row: auto;
+  }
+
+  .practice-type-control div,
+  .practice-type-control button {
+    width: 100%;
+  }
+
+  .practice-review {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  .practice-next-button {
+    width: 100%;
+  }
+}
